@@ -28,6 +28,24 @@ class User(AbstractUser):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     
+    # Añadimos related_name para evitar conflictos con el modelo User de Django
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='core_user_set',  # Nombre personalizado para evitar conflictos
+        related_query_name='core_user',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='core_user_set',  # Nombre personalizado para evitar conflictos
+        related_query_name='core_user',
+    )
+    
     objects = UserManager()
     
     USERNAME_FIELD = 'email'

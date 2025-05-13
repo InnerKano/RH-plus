@@ -1,5 +1,132 @@
 # Registro General de Cambios - RH Plus
 
+## Commit: Configuración del entorno de base de datos y modelo de usuario personalizado
+**Fecha:** 12 de mayo de 2025
+
+### Resumen General
+
+Se ha implementado la configuración necesaria para conectar la aplicación Django a la base de datos alojada en Render y se ha solucionado el problema de conflictos en el modelo de usuario personalizado. Se han realizado modificaciones en la estructura de archivos, configuración de Django y migraciones, permitiendo el correcto despliegue del backend.
+
+### 1. Configuración de Base de Datos
+
+#### 1.1 Conexión con Base de Datos Remota
+Se ha implementado la configuración para conectar la aplicación a la base de datos PostgreSQL alojada en Render:
+
+- Se agregó la carga de variables de entorno desde el archivo `.env` utilizando `python-dotenv`
+- Se configuró el parseo de la URL de conexión para obtener los parámetros de la base de datos
+- Se implementó un sistema de fallback para desarrollo local cuando no existe la variable de entorno
+
+```python
+# Ejemplo de configuración implementada en settings.py
+import dotenv
+from urllib.parse import urlparse
+
+# Cargar variables de entorno desde el archivo .env
+dotenv.load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+# Obtener la URL de la base de datos desde las variables de entorno
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Parse la URL de la base de datos
+    db_url = urlparse(DATABASE_URL)
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_url.path[1:],
+            'USER': db_url.username,
+            'PASSWORD': db_url.password,
+            'HOST': db_url.hostname,
+            'PORT': db_url.port,
+        }
+    }
+```
+
+#### 1.2 Solución temporal para desarrollo
+Se implementó una solución temporal utilizando SQLite para facilitar el desarrollo y solucionar problemas de migración:
+
+```python
+# Configuración temporal para desarrollo con SQLite
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+```
+
+### 2. Solución de conflictos con el modelo de Usuario personalizado
+
+#### 2.1 Configuración del modelo de usuario personalizado
+Se configuró correctamente el modelo de usuario personalizado, solucionando los conflictos de accesores inversos:
+
+- Se agregó la configuración `AUTH_USER_MODEL = 'core.User'` en `settings.py`
+- Se modificó el orden de las aplicaciones en `INSTALLED_APPS` para cargar primero la app `core`
+- Se agregaron `related_name` personalizados a los campos `groups` y `user_permissions` del modelo `User`
+
+```python
+# Modificación del modelo User en core/models.py
+class User(AbstractUser):
+    # ...existing code...
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='core_user_set',  # Nombre personalizado para evitar conflictos
+        related_query_name='core_user',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='core_user_set',  # Nombre personalizado para evitar conflictos
+        related_query_name='core_user',
+    )
+```
+
+#### 2.2 Estructura de migraciones
+Se creó la estructura necesaria para las migraciones:
+
+- Creación del directorio `migrations` en la app `core`
+- Creación de una migración inicial para el modelo `User` personalizado
+- Configuración adecuada de las dependencias de migración
+
+### 3. Estado Actual y Próximos Pasos
+
+#### 3.1 Estado Actual
+- **Conexión a base de datos**: ✅ Configurada para entorno de desarrollo y producción
+- **Modelo de usuario personalizado**: ✅ Configurado correctamente
+- **Migraciones**: ✅ Estructura básica implementada
+
+#### 3.2 Próximos Pasos
+1. **Backend**:
+   - Completar las migraciones para todos los módulos
+   - Implementar endpoints REST completos
+   - Añadir validaciones de datos
+   - Implementar autenticación JWT
+
+2. **Integración**:
+   - Configurar las conexiones del frontend al backend
+   - Realizar pruebas de integración
+
+### 4. Aspectos Técnicos Destacados
+
+#### 4.1 Decisiones Técnicas
+1. **Uso de python-dotenv**: Para gestionar variables de entorno sensibles como credenciales de base de datos
+2. **Uso temporal de SQLite**: Para facilitar el desarrollo y resolución de problemas de migración
+3. **Configuración de related_name personalizados**: Para evitar conflictos entre el modelo de usuario personalizado y el predeterminado de Django
+
+#### 4.2 Mejoras en Seguridad
+- Separación de credenciales de base de datos en archivo `.env` fuera del control de versiones
+- Uso de URL de conexión completa en lugar de componentes individuales para simplificar la configuración
+
+### 5. Conclusiones
+
+Los cambios implementados han permitido solucionar los problemas iniciales en la configuración de la base de datos y el modelo de usuario personalizado, estableciendo una base sólida para continuar con el desarrollo del backend. La separación de configuración para entornos de desarrollo y producción facilitará el despliegue y la escalabilidad del proyecto.
+
 ## Commit Inicial: Creación de la Estructura Base del Proyecto
 **Fecha:** 12 de mayo de 2025
 

@@ -74,7 +74,7 @@ cd RH-plus
 ```powershell
 cd backend
 python -m venv env
-.\env\Scripts\Activate
+env\Scripts\activate
 ```
 
 2. Instalar dependencias:
@@ -85,21 +85,24 @@ pip install -r requirements.txt
 
 3. Configurar la base de datos:
 
-- Cree una base de datos PostgreSQL
-- Actualice la configuración en `backend/config/settings.py`:
+#### Opción A: Usar una base de datos remota (recomendado para producción)
+- Cree un archivo `.env` en el directorio `backend/` con la URL de conexión:
 
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'rhplus',
-        'USER': 'username',
-        'PASSWORD': 'password',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
 ```
+DATABASE_URL=postgresql://username:password@host:port/database_name
+```
+
+#### Opción B: Usar una base de datos PostgreSQL local
+- Cree una base de datos PostgreSQL 
+- Actualice el archivo `.env` en el directorio `backend/`:
+
+```
+DATABASE_URL=postgresql://username:password@localhost:5432/rhplus
+```
+
+#### Opción C: Usar SQLite para desarrollo
+- La configuración por defecto usará SQLite si no se proporciona una URL de base de datos
+- No requiere configuración adicional, pero es menos potente que PostgreSQL
 
 4. Migrar la base de datos:
 
@@ -311,12 +314,20 @@ flutter pub get
    - Comprobar token JWT y su expiración
 
 3. **Error en migraciones**:
-   - Realizar reset de migraciones:
+   - Problemas con el modelo de usuario personalizado:
+   ```
+   Error: Reverse accessor 'Group.user_set' for 'auth.User.groups' clashes with reverse accessor for 'core.User.groups'
+   ```
+   Solución: Asegúrese de que `AUTH_USER_MODEL = 'core.User'` esté configurado en settings.py y que los campos `groups` y `user_permissions` tengan un `related_name` personalizado.
+   
+   - Realizar reset de migraciones si es necesario:
    ```powershell
    python manage.py migrate app_name zero
    python manage.py makemigrations app_name
    python manage.py migrate app_name
    ```
+   
+   - Si está usando un modelo de usuario personalizado y encuentra problemas, pruebe usar SQLite durante el desarrollo inicial:
 
 ## Contribuciones
 
