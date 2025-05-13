@@ -85,14 +85,14 @@ pip install -r requirements.txt
 
 3. Configurar la base de datos:
 
-#### Opción A: Usar una base de datos remota (recomendado para producción)
+#### Opción A: Usar una base de datos remota (recomendado)
 - Cree un archivo `.env` en el directorio `backend/` con la URL de conexión:
 
 ```
 DATABASE_URL=postgresql://username:password@host:port/database_name
 ```
 
-#### Opción B: Usar una base de datos PostgreSQL local
+#### Opción B: Usar una base de datos PostgreSQL local (para desarrollo)
 - Cree una base de datos PostgreSQL 
 - Actualice el archivo `.env` en el directorio `backend/`:
 
@@ -100,9 +100,7 @@ DATABASE_URL=postgresql://username:password@host:port/database_name
 DATABASE_URL=postgresql://username:password@localhost:5432/rhplus
 ```
 
-#### Opción C: Usar SQLite para desarrollo
-- La configuración por defecto usará SQLite si no se proporciona una URL de base de datos
-- No requiere configuración adicional, pero es menos potente que PostgreSQL
+> **Nota**: El sistema está optimizado para trabajar exclusivamente con PostgreSQL debido a las características avanzadas que utiliza como relaciones complejas, transacciones y búsquedas específicas.
 
 4. Migrar la base de datos:
 
@@ -179,18 +177,31 @@ flutter run            # Para dispositivos conectados o emuladores
 
 ### Backend (Django)
 
-1. Configuración de entorno de producción:
+#### Opción A: Despliegue en Render
 
-Cree un archivo `.env` en la raíz del proyecto backend con las variables de entorno:
+1. Cree una cuenta en [Render](https://render.com) y configure una base de datos PostgreSQL.
 
-```
-DEBUG=False
-SECRET_KEY=your-secure-secret-key
-DATABASE_URL=postgres://user:password@host:port/database
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-```
+2. Cree un nuevo servicio Web:
+   - Conecte su repositorio de GitHub
+   - Seleccione el directorio `backend/`
+   - Configure el entorno como Python
+   - Defina el comando de inicio: `gunicorn config.wsgi:application`
+   - Agregue las siguientes variables de entorno:
+     ```
+     DEBUG=False
+     SECRET_KEY=your-secure-secret-key
+     DATABASE_URL=[URL proporcionada por Render para la base de datos]
+     ALLOWED_HOSTS=*.render.com,yourdomain.com
+     ```
 
-2. Configuración del servidor web (ejemplo con Gunicorn y Nginx):
+3. Configure el comando de construcción (Build Command):
+   ```
+   pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+   ```
+
+4. Realice el despliegue y Render automáticamente instalará las dependencias, aplicará las migraciones y ejecutará la aplicación.
+
+#### Opción B: Despliegue en servidor propio (ejemplo con Gunicorn y Nginx):
 
 - Instalar Gunicorn:
 
@@ -320,14 +331,18 @@ flutter pub get
    ```
    Solución: Asegúrese de que `AUTH_USER_MODEL = 'core.User'` esté configurado en settings.py y que los campos `groups` y `user_permissions` tengan un `related_name` personalizado.
    
+   - Problemas con la base de datos:
+   ```
+   Error: relation "core_user" does not exist
+   ```
+   Solución: Verifique la conexión a la base de datos y confirme que las migraciones iniciales se han creado correctamente. Asegúrese de crear el directorio `migrations` en cada app y tener un archivo `__init__.py` dentro.
+   
    - Realizar reset de migraciones si es necesario:
    ```powershell
    python manage.py migrate app_name zero
    python manage.py makemigrations app_name
    python manage.py migrate app_name
    ```
-   
-   - Si está usando un modelo de usuario personalizado y encuentra problemas, pruebe usar SQLite durante el desarrollo inicial:
 
 ## Contribuciones
 

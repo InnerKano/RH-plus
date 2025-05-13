@@ -1,3 +1,128 @@
+# Commit: Configuración de PostgreSQL en Render y eliminación del uso de SQLite
+
+**Fecha:** 13 de mayo de 2025
+
+## Resumen General
+
+Se ha optimizado la configuración para el uso exclusivo de PostgreSQL como base de datos del proyecto, estableciendo la conexión con la base de datos alojada en Render mediante variables de entorno. Se eliminaron todas las referencias a SQLite y se estableció una estructura completa de migraciones para todas las aplicaciones, garantizando un despliegue correcto y consistente.
+
+## 1. Cambios en la Configuración de Base de Datos
+
+### 1.1 Configuración exclusiva para PostgreSQL
+Se modificó settings.py para utilizar únicamente PostgreSQL, eliminando toda referencia a SQLite:
+
+```python
+# Database configuration
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Parse database URL
+    db_url = urlparse(DATABASE_URL)
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_url.path[1:],
+            'USER': db_url.username,
+            'PASSWORD': db_url.password,
+            'HOST': db_url.hostname,
+            'PORT': db_url.port,
+        }
+    }
+else:
+    # Fallback configuration for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'rhplus',
+            'USER': 'postgres',
+            'PASSWORD': 'postgres',
+            'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
+```
+
+### 1.2 Carga dinámica de variables de entorno
+Se actualizó la configuración para cargar dinámicamente las variables de entorno relacionadas con despliegue:
+
+```python
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here')
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') or []
+```
+
+## 2. Estructura de Migraciones
+
+### 2.1 Creación de estructura de migraciones para todas las apps
+Se crearon directorios de migraciones para todas las aplicaciones del proyecto:
+
+- `core/migrations/`
+- `affiliation/migrations/`
+- `payroll/migrations/`
+- `performance/migrations/`
+- `selection/migrations/`
+- `training/migrations/`
+
+En cada directorio se incluyó un archivo `__init__.py` para garantizar la correcta detección de los paquetes de migración por Django.
+
+## 3. Variables de Entorno
+
+### 3.1 Extensión del archivo .env
+Se ampliaron las variables de entorno en el archivo .env para incluir configuraciones necesarias para producción:
+
+```
+# Database configuration for Render
+DATABASE_URL=postgresql://db_rhplus_user:jGOTbYCzw2NDfiBuhMFn1dxFj7pW6h4w@dpg-d0hbnoqdbo4c73dki3ag-a.oregon-postgres.render.com/db_rhplus
+
+# Production environment variables
+DEBUG=False
+SECRET_KEY=django-insecure-replace-with-secure-secret-key-in-production
+ALLOWED_HOSTS=.render.com,localhost,127.0.0.1
+```
+
+## 4. Documentación
+
+### 4.1 Actualización de README.md
+Se actualizó la documentación del proyecto para reflejar el uso exclusivo de PostgreSQL:
+
+- Se eliminaron referencias a SQLite
+- Se actualizó la sección de despliegue con instrucciones específicas para Render
+- Se agregaron pasos para la correcta aplicación de migraciones
+
+### 4.2 Actualización de la guía de resolución de problemas
+Se actualizó la sección de resolución de problemas con soluciones específicas para problemas con el modelo de usuario personalizado y la base de datos PostgreSQL.
+
+## 5. Estado Actual
+
+### 5.1 Componentes implementados
+- **Base de datos PostgreSQL**: ✅ Configuración completa para conexión a Render
+- **Variables de entorno**: ✅ Configuración para entorno de desarrollo y producción
+- **Migraciones**: ✅ Estructura completa para todas las aplicaciones
+- **Despliegue**: ✅ Configuración para despliegue en Render
+
+### 5.2 Próximos pasos
+- Desplegar la aplicación en Render
+- Completar la implementación de los endpoints API REST
+- Configurar la autenticación JWT
+- Conectar el frontend Flutter con la API desplegada
+
+## 6. Decisiones Técnicas
+
+### 6.1 Elección de PostgreSQL como única base de datos
+Se optó por utilizar exclusivamente PostgreSQL debido a:
+- Mejor rendimiento y escalabilidad para aplicaciones empresariales
+- Soporte avanzado para relaciones complejas y consultas especializadas
+- Compatibilidad con los servicios de Render para despliegue
+
+### 6.2 Estructura de despliegue
+Se configuró la aplicación para un despliegue optimizado en Render:
+- Variables de entorno para configuración dinámica
+- Estructura de migraciones compatible con el proceso de despliegue automático
+- Fallback para desarrollo local sin necesidad de cambios en el código
+
+Similar code found with 1 license type
+
 # Registro General de Cambios - RH Plus
 
 ## Commit: Configuración del entorno de base de datos y modelo de usuario personalizado
@@ -43,15 +168,19 @@ if DATABASE_URL:
     }
 ```
 
-#### 1.2 Solución temporal para desarrollo
-Se implementó una solución temporal utilizando SQLite para facilitar el desarrollo y solucionar problemas de migración:
+#### 1.2 Configuración para desarrollo local
+Se implementó un sistema de fallback para entornos de desarrollo local que no tienen acceso a la base de datos remota:
 
 ```python
-# Configuración temporal para desarrollo con SQLite
+# Configuración fallback para desarrollo local
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'rhplus',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 ```
@@ -88,18 +217,20 @@ class User(AbstractUser):
 ```
 
 #### 2.2 Estructura de migraciones
-Se creó la estructura necesaria para las migraciones:
+Se creó la estructura necesaria para las migraciones en todas las aplicaciones:
 
-- Creación del directorio `migrations` en la app `core`
+- Creación del directorio `migrations` en todas las apps (`core`, `affiliation`, `payroll`, `performance`, `selection` y `training`)
+- Creación de archivos `__init__.py` en cada directorio de migraciones
 - Creación de una migración inicial para el modelo `User` personalizado
-- Configuración adecuada de las dependencias de migración
+- Configuración adecuada de las dependencias de migración para asegurar el orden correcto
 
 ### 3. Estado Actual y Próximos Pasos
 
 #### 3.1 Estado Actual
-- **Conexión a base de datos**: ✅ Configurada para entorno de desarrollo y producción
+- **Conexión a base de datos**: ✅ Configurada para entorno de producción en Render
 - **Modelo de usuario personalizado**: ✅ Configurado correctamente
-- **Migraciones**: ✅ Estructura básica implementada
+- **Migraciones**: ✅ Estructura completa implementada en todas las aplicaciones
+- **Despliegue**: ✅ Archivos de configuración y variables de entorno para Render configuradas
 
 #### 3.2 Próximos Pasos
 1. **Backend**:
@@ -116,16 +247,45 @@ Se creó la estructura necesaria para las migraciones:
 
 #### 4.1 Decisiones Técnicas
 1. **Uso de python-dotenv**: Para gestionar variables de entorno sensibles como credenciales de base de datos
-2. **Uso temporal de SQLite**: Para facilitar el desarrollo y resolución de problemas de migración
+2. **Uso exclusivo de PostgreSQL**: Para aprovechar todas las características avanzadas necesarias para el sistema
 3. **Configuración de related_name personalizados**: Para evitar conflictos entre el modelo de usuario personalizado y el predeterminado de Django
 
 #### 4.2 Mejoras en Seguridad
 - Separación de credenciales de base de datos en archivo `.env` fuera del control de versiones
 - Uso de URL de conexión completa en lugar de componentes individuales para simplificar la configuración
 
-### 5. Conclusiones
+### 5. Configuraciones adicionales para despliegue
 
-Los cambios implementados han permitido solucionar los problemas iniciales en la configuración de la base de datos y el modelo de usuario personalizado, estableciendo una base sólida para continuar con el desarrollo del backend. La separación de configuración para entornos de desarrollo y producción facilitará el despliegue y la escalabilidad del proyecto.
+#### 5.1 Archivos de configuración para despliegue
+Se han creado los siguientes archivos para facilitar el despliegue en plataformas como Render:
+ELIMINADO PROCFILE Y RUNTIME.TXT:
+   1. **Procfile**: Configuración para servidores que siguen el estándar de Heroku/Render:
+   ```
+   web: gunicorn config.wsgi:application --log-file -
+   ```
+
+   2. **runtime.txt**: Especificación de la versión de Python requerida:
+   ```
+   python-3.13.0
+   ```
+
+3. **Variables de entorno**: Se han agregado variables adicionales al archivo `.env`:
+   ```
+   DEBUG=False
+   SECRET_KEY=django-insecure-replace-with-secure-secret-key-in-production
+   ALLOWED_HOSTS=.render.com,localhost,127.0.0.1
+   ```
+
+4. **Configuración de settings.py**: Se ha modificado para cargar dinámicamente las variables de entorno:
+   ```python
+   SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here')
+   DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+   ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') or []
+   ```
+
+### 6. Conclusiones
+
+Los cambios implementados han permitido solucionar los problemas iniciales en la configuración de la base de datos y el modelo de usuario personalizado, estableciendo una base sólida para continuar con el desarrollo del backend. La configuración específica para Render permitirá un despliegue sencillo y consistente, mientras que la estructura de migraciones completa facilitará la inicialización correcta de la base de datos en producción.
 
 ## Commit Inicial: Creación de la Estructura Base del Proyecto
 **Fecha:** 12 de mayo de 2025

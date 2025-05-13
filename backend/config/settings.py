@@ -14,12 +14,13 @@ dotenv.load_dotenv(os.path.join(Path(__file__).resolve().parent.parent, '.env'))
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-your-secret-key-here'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = []
+# Hosts/domain names that are valid for this site
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') or []
 
 # Application definition
 
@@ -82,33 +83,35 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Configuración temporal para desarrollo con SQLite 
-# (más fácil para resolver problemas de migración)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
+# Obtener la URL de la base de datos desde las variables de entorno
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# Descomentar esto después de resolver los problemas de migración
-# # Obtener la URL de la base de datos desde las variables de entorno
-# DATABASE_URL = os.environ.get('DATABASE_URL')
-# 
-# if DATABASE_URL:
-#     # Parse la URL de la base de datos
-#     db_url = urlparse(DATABASE_URL)
-#     
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.postgresql',
-#             'NAME': db_url.path[1:],
-#             'USER': db_url.username,
-#             'PASSWORD': db_url.password,
-#             'HOST': db_url.hostname,
-#             'PORT': db_url.port,
-#         }
-#     }
+if DATABASE_URL:
+    # Parse la URL de la base de datos
+    db_url = urlparse(DATABASE_URL)
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_url.path[1:],
+            'USER': db_url.username,
+            'PASSWORD': db_url.password,
+            'HOST': db_url.hostname,
+            'PORT': db_url.port,
+        }
+    }
+else:
+    # Configuración fallback (para ambientes de desarrollo)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'rhplus',
+            'USER': 'postgres',
+            'PASSWORD': 'postgres',
+            'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
 # else:
 #     # Configuración de base de datos local (fallback)
 #     DATABASES = {
