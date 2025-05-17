@@ -329,8 +329,7 @@ class _PayrollEntryDetailScreenState extends State<PayrollEntryDetailScreen> {
                   ),
                 ),
                 Text(
-                  currencyFormat.format(entry.netPay),
-                  style: const TextStyle(
+                  currencyFormat.format(entry.netPay),                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                     color: Colors.green.shade700,

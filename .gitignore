@@ -1,2 +1,6 @@
 backend/.env
 *.pyc
+frontend/pubspec.lock
+/frontend/.dart_tool
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies

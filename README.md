@@ -137,6 +137,14 @@ cd frontend
 flutter pub get
 ```
 
+> **Nota**: Asegúrese de tener configurado el entorno de Flutter y Dart correctamente.
+### Configurar Flutter con Vs Code
+- Instalar la extensión de Flutter y Dart en Visual Studio Code.
+- Saldra una ventana emergente pidiendo la instalación o localización del SDK de Flutter, haga clic en "Instalar" o "Localizar" según corresponda.
+- Asegúrese de que el SDK de Flutter esté en su PATH. 
+   Comando: `>Flutter: Add Flutter SDK to PATH`
+- Sabra si la instalación fue exitosa si en su terminal aparece un output de flutter doctor sin errores.
+
 2. Actualizar la configuración de la API:
 
 Edite el archivo `frontend/lib/utils/constants.dart` para apuntar a su servidor de API:
