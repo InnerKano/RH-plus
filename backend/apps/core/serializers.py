@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Role, UserRole
+from .models import User, Role, UserRole, SystemActivity
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User model."""
@@ -30,3 +30,18 @@ class UserRoleSerializer(serializers.ModelSerializer):
         model = UserRole
         fields = ('id', 'user', 'role')
         read_only_fields = ('id',)
+
+class SystemActivitySerializer(serializers.ModelSerializer):
+    """Serializer for the SystemActivity model."""
+    
+    created_by_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SystemActivity
+        fields = ('id', 'title', 'description', 'type', 'timestamp', 'created_by', 'created_by_name')
+        read_only_fields = ('id', 'timestamp', 'created_by')
+    
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+        return "Sistema"

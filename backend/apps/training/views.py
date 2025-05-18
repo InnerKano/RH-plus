@@ -10,6 +10,7 @@ from .serializers import (
 from .repositories import (
     TrainingProgramRepository, TrainingSessionRepository, TrainingAttendanceRepository
 )
+from apps.core.utils import record_activity
 
 class TrainingTypeViewSet(viewsets.ModelViewSet):
     """ViewSet for TrainingType model."""
@@ -47,7 +48,15 @@ class TrainingSessionViewSet(viewsets.ModelViewSet):
         return TrainingSession.objects.all()
     
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        session = serializer.save(created_by=self.request.user)
+        
+        # Record activity
+        record_activity(
+            title="Nueva sesión de capacitación programada",
+            description=f"Se ha programado la capacitación '{session.program.name}' para el {session.date.strftime('%d/%m/%Y')}",
+            activity_type="training",
+            user=self.request.user
+        )
     
     @action(detail=False, methods=['get'])
     def upcoming(self, request):

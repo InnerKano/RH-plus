@@ -3,8 +3,10 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import User, Role, UserRole
-from .serializers import UserSerializer, RoleSerializer, UserRoleSerializer
+from django.db.models import Count
+from django.utils import timezone
+from .models import User, Role, UserRole, SystemActivity
+from .serializers import UserSerializer, RoleSerializer, UserRoleSerializer, SystemActivitySerializer
 from .repositories import UserRepository
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -54,3 +56,72 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     """Custom token view that uses the custom token serializer."""
     
     serializer_class = CustomTokenObtainPairSerializer
+    
+class ActivityViewSet(viewsets.ModelViewSet):
+    """ViewSet for the SystemActivity model."""
+    
+    queryset = SystemActivity.objects.all().order_by('-timestamp')
+    serializer_class = SystemActivitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        # Asigna automáticamente el usuario actual como creador
+        serializer.save(created_by=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def recent(self, request):
+        """Return the most recent activities."""
+        activities = self.queryset[:10]  # Limitar a las 10 más recientes
+        serializer = self.get_serializer(activities, many=True)
+        return Response(serializer.data)
+        
+    @action(detail=False, methods=['get'])
+    def dashboard_summary(self, request):
+        """Return summary data for the dashboard."""
+        from apps.affiliation.models import Employee
+        from apps.selection.models import Candidate
+        from apps.training.models import TrainingSession
+        from apps.payroll.models import PayrollPeriod
+        
+        try:
+            # Obtener conteo de empleados
+            employee_count = Employee.objects.filter(is_active=True).count()
+        except:
+            employee_count = 0
+            
+        try:
+            # Obtener conteo de candidatos
+            candidate_count = Candidate.objects.filter(status__in=['new', 'in_process']).count()
+        except:
+            candidate_count = 0
+            
+        try:
+            # Obtener sesiones de capacitación próximas
+            upcoming_trainings_count = TrainingSession.objects.filter(
+                date__gte=timezone.now().date()
+            ).count()
+        except:
+            upcoming_trainings_count = 0
+            
+        try:
+            # Obtener período de nómina actual
+            current_period = PayrollPeriod.objects.filter(
+                is_active=True
+            ).first()
+            payroll_period = f"{current_period.name}" if current_period else "Sin período activo"
+        except:
+            payroll_period = "Sin datos"
+            
+        # Obtener actividades recientes
+        recent_activities = SystemActivity.objects.all().order_by('-timestamp')[:5]
+        activities_serializer = SystemActivitySerializer(recent_activities, many=True)
+        
+        summary_data = {
+            'employee_count': employee_count,
+            'candidate_count': candidate_count,
+            'payroll_period': payroll_period,
+            'upcoming_trainings_count': upcoming_trainings_count,
+            'recent_activities': activities_serializer.data
+        }
+        
+        return Response(summary_data)

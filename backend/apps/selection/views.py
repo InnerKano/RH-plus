@@ -7,6 +7,7 @@ from .serializers import (
     ProcessCandidateSerializer, CandidateDocumentSerializer
 )
 from .repositories import CandidateRepository, SelectionProcessRepository
+from apps.core.utils import record_activity
 
 class SelectionStageViewSet(viewsets.ModelViewSet):
     queryset = SelectionStage.objects.all()
@@ -19,6 +20,26 @@ class CandidateViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         return CandidateRepository.get_active_candidates()
+        
+    def perform_create(self, serializer):
+        """Register a system activity when a candidate is created."""
+        candidate = serializer.save()
+        record_activity(
+            title="Nuevo candidato registrado",
+            description=f"Se ha registrado al candidato {candidate.first_name} {candidate.last_name} para el proceso de selección",
+            activity_type="candidate",
+            user=self.request.user
+        )
+        
+    def perform_update(self, serializer):
+        """Register a system activity when a candidate is updated."""
+        candidate = serializer.save()
+        record_activity(
+            title="Información de candidato actualizada",
+            description=f"Se ha actualizado la información del candidato {candidate.first_name} {candidate.last_name}",
+            activity_type="candidate",
+            user=self.request.user
+        )
     
     @action(detail=False, methods=['get'])
     def by_document(self, request):
@@ -53,6 +74,20 @@ class ProcessCandidateViewSet(viewsets.ModelViewSet):
     queryset = ProcessCandidate.objects.all()
     serializer_class = ProcessCandidateSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def perform_update(self, serializer):
+        """Register activity when a candidate's status in a process changes."""
+        process_candidate = serializer.save()
+        candidate = process_candidate.candidate
+        process = process_candidate.process
+        stage = process_candidate.stage
+        
+        record_activity(
+            title="Actualización de estado de candidato",
+            description=f"El candidato {candidate.first_name} {candidate.last_name} ha avanzado a la etapa '{stage.name}' en el proceso '{process.name}'",
+            activity_type="candidate",
+            user=self.request.user
+        )
 
 class CandidateDocumentViewSet(viewsets.ModelViewSet):
     queryset = CandidateDocument.objects.all()

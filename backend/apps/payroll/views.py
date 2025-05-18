@@ -11,6 +11,7 @@ from .repositories import (
     PayrollEntryRepository, PayrollItemRepository
 )
 from django.utils import timezone
+from apps.core.utils import record_activity
 
 class ContractViewSet(viewsets.ModelViewSet):
     """ViewSet for Contract model."""
@@ -46,7 +47,7 @@ class PayrollPeriodViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(periods, many=True)
         return Response(serializer.data)
-    
+        
     @action(detail=True, methods=['post'])
     def close(self, request, pk=None):
         """Close a payroll period."""
@@ -59,6 +60,14 @@ class PayrollPeriodViewSet(viewsets.ModelViewSet):
         period.closed_by = request.user
         period.closed_at = timezone.now()
         period.save()
+        
+        # Record the activity
+        record_activity(
+            title="Cierre de período de nómina",
+            description=f"Se ha cerrado el período de nómina '{period.name}' con fecha {period.end_date}",
+            activity_type="payroll",
+            user=request.user
+        )
         
         serializer = self.get_serializer(period)
         return Response(serializer.data)

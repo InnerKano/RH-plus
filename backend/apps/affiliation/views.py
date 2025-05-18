@@ -7,6 +7,7 @@ from .serializers import (
     ProviderSerializer, AffiliationSerializer
 )
 from .repositories import EmployeeRepository, AffiliationRepository
+from apps.core.utils import record_activity
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     """ViewSet for the Employee model."""
@@ -15,6 +16,26 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         return EmployeeRepository.get_active_employees()
+        
+    def perform_create(self, serializer):
+        """Register a system activity when an employee is created."""
+        employee = serializer.save()
+        record_activity(
+            title="Nuevo empleado registrado",
+            description=f"Se ha registrado al empleado {employee.first_name} {employee.last_name} con ID {employee.id}",
+            activity_type="employee",
+            user=self.request.user
+        )
+        
+    def perform_update(self, serializer):
+        """Register a system activity when an employee is updated."""
+        employee = serializer.save()
+        record_activity(
+            title="Información de empleado actualizada",
+            description=f"Se ha actualizado la información del empleado {employee.first_name} {employee.last_name}",
+            activity_type="employee",
+            user=self.request.user
+        )
     
     @action(detail=False, methods=['get'])
     def by_document(self, request):

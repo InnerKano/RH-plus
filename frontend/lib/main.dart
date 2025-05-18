@@ -6,6 +6,7 @@ import 'package:rh_plus/providers/employee_provider.dart';
 import 'package:rh_plus/providers/candidate_provider.dart';
 import 'package:rh_plus/providers/payroll_provider.dart';
 import 'package:rh_plus/providers/training_provider.dart';
+import 'package:rh_plus/providers/activity_provider.dart';
 import 'package:rh_plus/utils/constants.dart';
 import 'package:rh_plus/views/login_screen.dart';
 import 'package:rh_plus/views/dashboard_screen.dart';
@@ -32,11 +33,15 @@ void main() {  runApp(
           create: (_) => PayrollProvider(token: ''),
           update: (_, auth, previousProvider) => 
             PayrollProvider(token: auth.token ?? ''),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, TrainingProvider>(
+        ),        ChangeNotifierProxyProvider<AuthProvider, TrainingProvider>(
           create: (_) => TrainingProvider(token: ''),
           update: (_, auth, previousProvider) => 
             TrainingProvider(token: auth.token ?? ''),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, ActivityProvider>(
+          create: (_) => ActivityProvider(token: ''),
+          update: (_, auth, previousProvider) => 
+            ActivityProvider(token: auth.token ?? ''),
         ),
       ],
       child: const RHPlusApp(),

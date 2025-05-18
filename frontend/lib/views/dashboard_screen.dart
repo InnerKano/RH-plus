@@ -6,6 +6,8 @@ import 'package:rh_plus/providers/payroll_provider.dart';
 import 'package:rh_plus/providers/training_provider.dart';
 import 'package:rh_plus/providers/employee_provider.dart';
 import 'package:rh_plus/providers/candidate_provider.dart';
+import 'package:rh_plus/providers/activity_provider.dart';
+import 'package:rh_plus/services/activity_service.dart';
 import 'package:rh_plus/utils/constants.dart';
 import 'package:rh_plus/views/payroll/payroll_dashboard_screen.dart';
 import 'package:rh_plus/views/training/training_dashboard_screen.dart';
@@ -39,11 +41,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Icons.school_outlined,
   ];
   late List<Widget> _screens;
-  
-  @override
+    @override
   void initState() {
     super.initState();
     _initializeScreens();
+    
+    // Carga los datos del dashboard cuando se inicia la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ActivityProvider>(context, listen: false).fetchDashboardSummary();
+      Provider.of<ActivityProvider>(context, listen: false).fetchRecentActivities();
+      
+      // También podríamos cargar datos específicos si es necesario
+      Provider.of<EmployeeProvider>(context, listen: false).fetchEmployees();
+      Provider.of<CandidateProvider>(context, listen: false).fetchCandidates();
+      
+      if (kDebugMode) {
+        print('Cargando datos del dashboard...');
+      }
+    });
   }
   
   void _initializeScreens() {
@@ -55,10 +70,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const Center(child: Text('Módulo de Desempeño')),
       const TrainingDashboardScreen(),
     ];
-  }
-  Widget _buildDashboardSummary() {
-    return Consumer4<AuthProvider, EmployeeProvider, PayrollProvider, TrainingProvider>(
-      builder: (context, authProvider, employeeProvider, payrollProvider, trainingProvider, child) {
+  }  Widget _buildDashboardSummary() {
+    return Consumer5<AuthProvider, EmployeeProvider, PayrollProvider, TrainingProvider, ActivityProvider>(
+      builder: (context, authProvider, employeeProvider, payrollProvider, trainingProvider, activityProvider, child) {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -112,63 +126,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
+              const SizedBox(height: 16),              activityProvider.isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
                 children: [
-                  _buildSummaryCard(
-                    'Empleados',
-                    '124',
-                    Icons.badge_outlined,
-                    Colors.blue,
-                    () {
-                      setState(() {
-                        _selectedIndex = 2; // Índice del módulo de empleados
-                      });
-                    },
+                  Row(
+                    children: [
+                      _buildSummaryCard(
+                        'Empleados',
+                        activityProvider.dashboardSummary?.employeeCount.toString() ?? '0',
+                        Icons.badge_outlined,
+                        Colors.blue,
+                        () {
+                          setState(() {
+                            _selectedIndex = 2; // Índice del módulo de empleados
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      _buildSummaryCard(
+                        'Candidatos',
+                        activityProvider.dashboardSummary?.candidateCount.toString() ?? '0',
+                        Icons.people_outline,
+                        Colors.orange,
+                        () {
+                          setState(() {
+                            _selectedIndex = 1; // Índice del módulo de candidatos
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  _buildSummaryCard(
-                    'Candidatos',
-                    '37',
-                    Icons.people_outline,
-                    Colors.orange,
-                    () {
-                      setState(() {
-                        _selectedIndex = 1; // Índice del módulo de candidatos
-                      });
-                    },
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildSummaryCard(
+                        'Nómina',
+                        activityProvider.dashboardSummary?.payrollPeriod ?? 'Sin datos',
+                        Icons.attach_money,
+                        Colors.green,
+                        () {
+                          setState(() {
+                            _selectedIndex = 3; // Índice del módulo de nómina
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      _buildSummaryCard(
+                        'Capacitaciones',
+                        '${activityProvider.dashboardSummary?.upcomingTrainingsCount ?? 0} próximas',
+                        Icons.school_outlined,
+                        Colors.purple,
+                        () {
+                          setState(() {
+                            _selectedIndex = 5; // Índice del módulo de capacitación
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  _buildSummaryCard(
-                    'Nómina',
-                    'Período Actual',
-                    Icons.attach_money,
-                    Colors.green,
-                    () {
-                      setState(() {
-                        _selectedIndex = 3; // Índice del módulo de nómina
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 16),
-                  _buildSummaryCard(
-                    'Capacitaciones',
-                    '5 próximas',
-                    Icons.school_outlined,
-                    Colors.purple,
-                    () {
-                      setState(() {
-                        _selectedIndex = 5; // Índice del módulo de capacitación
-                      });
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+              ),              const SizedBox(height: 24),
               const Text(
                 'Actividad Reciente',
                 style: TextStyle(
@@ -177,27 +195,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildActivityCard(
-                'Nuevo empleado registrado',
-                'Juan Pérez fue añadido al sistema',
-                Icons.person_add,
-                Colors.blue,
-                DateTime.now().subtract(const Duration(hours: 2)),
-              ),
-              _buildActivityCard(
-                'Nómina aprobada',
-                'La nómina de mayo fue aprobada',
-                Icons.check_circle,
-                Colors.green,
-                DateTime.now().subtract(const Duration(days: 1)),
-              ),
-              _buildActivityCard(
-                'Sesión de capacitación completada',
-                'Inducción de seguridad y salud en el trabajo',
-                Icons.school,
-                Colors.purple,
-                DateTime.now().subtract(const Duration(days: 2)),
-              ),
+              
+              // Mostrar actividades desde la API o mensaje si no hay ninguna
+              activityProvider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : activityProvider.activities.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('No hay actividades recientes para mostrar'),
+                    ),
+                  )
+                : Column(
+                    children: activityProvider.activities.map((activity) {
+                      // Determinar el icono según el tipo de actividad
+                      IconData activityIcon = Icons.info_outline;
+                      Color activityColor = Colors.blue;
+                      
+                      switch(activity.type) {
+                        case 'employee':
+                          activityIcon = Icons.person_add;
+                          activityColor = Colors.blue;
+                          break;
+                        case 'payroll':
+                          activityIcon = Icons.attach_money;
+                          activityColor = Colors.green;
+                          break;
+                        case 'training':
+                          activityIcon = Icons.school;
+                          activityColor = Colors.purple;
+                          break;
+                        case 'candidate':
+                          activityIcon = Icons.people_outline;
+                          activityColor = Colors.orange;
+                          break;
+                        case 'performance':
+                          activityIcon = Icons.assessment;
+                          activityColor = Colors.red;
+                          break;
+                      }
+                      
+                      return _buildActivityCard(
+                        activity.title,
+                        activity.description,
+                        activityIcon,
+                        activityColor,
+                        activity.timestamp,
+                      );
+                    }).toList(),
+                  ),
             ],
           ),
         );
