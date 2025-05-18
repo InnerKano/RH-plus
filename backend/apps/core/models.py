@@ -8,6 +8,14 @@ class UserManager(BaseUserManager):
         """Create and save a new user."""
         if not email:
             raise ValueError('Users must have an email address')
+        
+        import uuid
+        username = extra_fields.get('username') 
+        if not username:
+            # Create a unique username based on the email or a random string
+            username = email.split('@')[0] + str(uuid.uuid4())[:8]
+            extra_fields['username'] = username
+            
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -24,6 +32,12 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     """Custom user model with email as the unique identifier."""
     
+    username = models.CharField(
+        max_length=150, 
+        unique=True,
+        null=True,
+        blank=True
+    )
     email = models.EmailField(max_length=255, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

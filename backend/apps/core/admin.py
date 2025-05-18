@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, Role, UserRole
 
+import uuid
+
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     """Admin for custom User model."""
@@ -24,6 +26,15 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('email', 'password1', 'password2', 'is_active', 'is_staff')
         }),
     )
+    
+    def save_model(self, request, obj, form, change):
+        """Ensure username is unique before saving."""
+        if not obj.username:
+            # Create a unique username based on the email or a random string
+            obj.username = obj.email.split('@')[0] + str(uuid.uuid4())[:8]
+        
+        # Call the parent save_model method
+        super().save_model(request, obj, form, change)
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
