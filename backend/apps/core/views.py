@@ -1,6 +1,8 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User, Role, UserRole
 from .serializers import UserSerializer, RoleSerializer, UserRoleSerializer
 from .repositories import UserRepository
@@ -32,3 +34,23 @@ class UserRoleViewSet(viewsets.ModelViewSet):
     queryset = UserRole.objects.all()
     serializer_class = UserRoleSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom token serializer that uses email as the username field."""
+    
+    username_field = User.USERNAME_FIELD
+    
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # Add custom claims
+        token['name'] = user.get_full_name()
+        token['email'] = user.email
+        return token
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Custom token view that uses the custom token serializer."""
+    
+    serializer_class = CustomTokenObtainPairSerializer

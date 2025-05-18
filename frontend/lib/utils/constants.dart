@@ -3,11 +3,11 @@ class ApiConstants {
   static const String baseUrl = 'http://localhost:8000';
   
   // Authentication endpoints
-  static const String loginUrl = '$baseUrl/api/token/';
-  static const String refreshTokenUrl = '$baseUrl/api/token/refresh/';
+  static const String loginUrl = '$baseUrl/api/core/token/';
+  static const String refreshTokenUrl = '$baseUrl/api/core/token/refresh/';
   
   // Core endpoints
-  static const String userProfileUrl = '$baseUrl/api/core/users/profile/';
+  static const String userProfileUrl = '$baseUrl/api/core/users/me/';
   
   // Feature-specific timeouts (in seconds)
   static const int defaultTimeout = 30;

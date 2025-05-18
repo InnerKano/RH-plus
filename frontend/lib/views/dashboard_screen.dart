@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:rh_plus/providers/auth_provider.dart';
 import 'package:rh_plus/providers/payroll_provider.dart';
@@ -331,12 +332,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
-        actions: [
-          IconButton(
+        actions: [          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Cerrar Sesión',
             onPressed: () {
               authProvider.logout();
+              Navigator.pushReplacementNamed(context, RouteNames.login);
+              if (kDebugMode) {
+                print('Sesión cerrada, navegando al login');
+              }
             },
           ),
         ],

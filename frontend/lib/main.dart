@@ -18,17 +18,25 @@ void main() {  runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ProxyProvider<AuthProvider, EmployeeProvider>(
-          update: (_, auth, __) => EmployeeProvider(token: auth.token ?? ''),
+        ChangeNotifierProxyProvider<AuthProvider, EmployeeProvider>(
+          create: (_) => EmployeeProvider(token: ''),
+          update: (_, auth, previousProvider) => 
+            EmployeeProvider(token: auth.token ?? ''),
         ),
-        ProxyProvider<AuthProvider, CandidateProvider>(
-          update: (_, auth, __) => CandidateProvider(token: auth.token ?? ''),
+        ChangeNotifierProxyProvider<AuthProvider, CandidateProvider>(
+          create: (_) => CandidateProvider(token: ''),
+          update: (_, auth, previousProvider) => 
+            CandidateProvider(token: auth.token ?? ''),
         ),
-        ProxyProvider<AuthProvider, PayrollProvider>(
-          update: (_, auth, __) => PayrollProvider(token: auth.token ?? ''),
+        ChangeNotifierProxyProvider<AuthProvider, PayrollProvider>(
+          create: (_) => PayrollProvider(token: ''),
+          update: (_, auth, previousProvider) => 
+            PayrollProvider(token: auth.token ?? ''),
         ),
-        ProxyProvider<AuthProvider, TrainingProvider>(
-          update: (_, auth, __) => TrainingProvider(token: auth.token ?? ''),
+        ChangeNotifierProxyProvider<AuthProvider, TrainingProvider>(
+          create: (_) => TrainingProvider(token: ''),
+          update: (_, auth, previousProvider) => 
+            TrainingProvider(token: auth.token ?? ''),
         ),
       ],
       child: const RHPlusApp(),

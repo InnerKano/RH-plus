@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:rh_plus/providers/auth_provider.dart';
 import 'package:rh_plus/utils/constants.dart';
@@ -23,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -36,10 +36,18 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text,
       );
 
-      if (!success && mounted) {
-        setState(() {
-          _errorMessage = 'Credenciales inválidas. Por favor intente nuevamente.';
-        });
+      if (mounted) {
+        if (success) {
+          if (kDebugMode) {
+            print('Login exitoso, navegando al dashboard');
+          }
+          // Navigate to Dashboard on successful login
+          Navigator.pushReplacementNamed(context, RouteNames.dashboard);
+        } else {
+          setState(() {
+            _errorMessage = 'Credenciales inválidas. Por favor intente nuevamente.';
+          });
+        }
       }
     }
   }

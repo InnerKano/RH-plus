@@ -576,3 +576,81 @@ Este commit inicial establece una base sólida para el desarrollo del sistema RH
 4. **Reutilización**: Componentes genéricos compartidos
 
 Los próximos pasos se centrarán en completar la implementación de cada módulo y añadir funcionalidades específicas, manteniendo los principios arquitectónicos establecidos.
+
+
+# Fix: Solución a Problema de Inicialización y Carga Después del Login
+**Fecha:** 13 de mayo de 2025
+
+## Problema
+El sistema permitía la autenticación (se obtenía el token correctamente), pero después de iniciar sesión la aplicación se quedaba cargando indefinidamente sin mostrar el dashboard.
+
+## Cambios Realizados
+
+### 1. Corregido Tipo de Provider en main.dart
+* **Ubicación**: main.dart
+* **Problema**: Se estaban utilizando `ProxyProvider` para proveedores que extienden de `ChangeNotifier`
+* **Solución**: Reemplazados por `ChangeNotifierProxyProvider` para mantener la funcionalidad de notificación
+* **Detalle**: Esto garantiza que los providers puedan notificar cambios de estado correctamente, permitiendo que la interfaz se actualice cuando hay cambios en el modelo
+
+```dart
+// Antes
+ProxyProvider<AuthProvider, EmployeeProvider>(
+  update: (_, auth, __) => EmployeeProvider(token: auth.token ?? ''),
+)
+
+// Después
+ChangeNotifierProxyProvider<AuthProvider, EmployeeProvider>(
+  create: (_) => EmployeeProvider(token: ''),
+  update: (_, auth, previousProvider) => 
+    EmployeeProvider(token: auth.token ?? ''),
+)
+```
+
+### 2. Mejorado Sistema de Logging
+* **Ubicación**: auth_provider.dart
+* **Problema**: Faltaba información de depuración para diagnosticar problemas en el flujo de autenticación
+* **Solución**: Agregado logging detallado en los métodos `login()`, `loadUserFromToken()` y `_fetchUserData()`
+* **Detalle**: Se agregaron logs para rastrear todo el proceso de autenticación, mostrando información sobre:
+  - Intentos de inicio de sesión
+  - Respuestas del servidor
+  - Estado de los tokens
+  - Éxito/fallo en la carga de datos del usuario
+
+### 3. Verificación de Configuración de URL
+* **Ubicación**: constants.dart
+* **Problema**: Posibles discrepancias entre URLs esperadas y configuradas
+* **Solución**: Confirmada la configuración correcta de `userProfileUrl` como `$baseUrl/api/core/users/me/`
+* **Detalle**: Asegura que el frontend esté apuntando al endpoint correcto en el backend para obtener los datos del usuario
+
+### 4. Implementación de Navegación después del Logout
+* **Ubicación**: dashboard_screen.dart
+* **Problema**: No se redirigía al usuario a la pantalla de login después de cerrar sesión
+* **Solución**: Agregada navegación explícita y logging al cerrar sesión
+* **Detalle**: Ahora después de cerrar sesión, la aplicación redirecciona automáticamente al usuario a la pantalla de login
+
+```dart
+onPressed: () async {
+  await authProvider.logout();
+  if (mounted) {
+    Navigator.pushReplacementNamed(context, RouteNames.login);
+    if (kDebugMode) {
+      print('Sesión cerrada, navegando al login');
+    }
+  }
+}
+```
+
+## Estructura de Datos Verificada
+* **UserModel**: Confirmado que el modelo `UserModel` tiene correctamente implementado el getter `fullName` para mostrar el nombre completo del usuario
+* **Serializers**: Verificada la estructura del serializador en el backend para asegurar compatibilidad con el modelo del frontend
+
+## Beneficios
+- **Mayor Fiabilidad**: La aplicación ahora maneja correctamente el estado de autenticación
+- **Mejor Experiencia**: Flujo completo de inicio y cierre de sesión sin problemas
+- **Facilidad de Diagnóstico**: Logs detallados que facilitan la identificación de problemas futuros
+- **Coherencia de Datos**: Garantía de que el modelo de usuario se carga correctamente después del login
+
+## Pruebas Realizadas
+- Verificado el proceso completo de inicio de sesión
+- Confirmado que el usuario es redirigido correctamente al dashboard
+- Comprobado que el cierre de sesión funciona y redirige al login
