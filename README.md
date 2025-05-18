@@ -1,5 +1,10 @@
 # RH Plus
 
+[![Estado](https://img.shields.io/badge/Estado-En%20Desarrollo-yellow)](https://github.com/username/RH-plus)
+[![API Docs](https://img.shields.io/badge/API-Documentación-blue)](http://localhost:8000/api/schema/swagger-ui/)
+[![Django](https://img.shields.io/badge/Django-4.2.10-green)](https://www.djangoproject.com/)
+[![Flutter](https://img.shields.io/badge/Flutter-2.10+-blue)](https://flutter.dev/)
+
 Sistema de Gestión de Recursos Humanos con backend en Django y frontend en Flutter.
 
 ![RH Plus Logo](docs/images/logo.png)
@@ -179,6 +184,10 @@ flutter run            # Para dispositivos conectados o emuladores
 
 2. **Aplicación Frontend**: Inicie sesión en la aplicación utilizando las mismas credenciales o un usuario creado específicamente para pruebas.
 
+3. **Documentación API**: 
+   - **Swagger UI**: Acceda a la documentación interactiva en `http://localhost:8000/api/schema/swagger-ui/`
+   - **ReDoc**: Versión alternativa en `http://localhost:8000/api/docs/`
+
 ### Principales Módulos
 
 - **Core**: Gestión de usuarios y autenticación
@@ -293,6 +302,41 @@ flutter build ios --release
    - **Web**: Copie los archivos generados en `build/web` a su servidor web o servicio de hosting.
    - **Android**: Use el archivo APK generado en `build/app/outputs/flutter-apk/app-release.apk` para distribuirlo o publicarlo en Google Play.
    - **iOS**: Utilice Xcode para subir la aplicación a la App Store.
+
+## Enlaces Rápidos y Documentación
+
+### API y Desarrollo
+
+| Recurso | URL | Descripción |
+|---------|-----|-------------|
+| **API Swagger UI** | [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/) | Interfaz interactiva para explorar y probar los endpoints de la API |
+| **API ReDoc** | [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/) | Documentación de la API con formato legible |
+| **Admin Panel** | [http://localhost:8000/admin/](http://localhost:8000/admin/) | Panel de administración de Django |
+
+### Enlaces Útiles para el Desarrollo
+
+- **Django REST Framework**: [https://www.django-rest-framework.org/](https://www.django-rest-framework.org/)
+- **Flutter Docs**: [https://docs.flutter.dev/](https://docs.flutter.dev/)
+- **PostgreSQL Docs**: [https://www.postgresql.org/docs/](https://www.postgresql.org/docs/)
+
+### Comandos Útiles
+
+```powershell
+# Ejecutar el servidor de desarrollo de Django
+cd backend
+env\Scripts\activate
+python manage.py runserver
+
+# Ejecutar la aplicación Flutter en modo desarrollo
+cd frontend
+flutter run -d chrome
+
+# Generar migraciones de Django
+cd backend
+env\Scripts\activate
+python manage.py makemigrations
+python manage.py migrate
+```
 
 ## Seguridad y Respaldo
 
