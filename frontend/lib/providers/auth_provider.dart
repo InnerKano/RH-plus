@@ -1,96 +1,161 @@
 import 'dart:convert';
-import 'dart:math' as Math;
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:rh_plus/models/user_model.dart';
-import 'package:rh_plus/utils/constants.dart';
+import '../models/user_model.dart';
+import '../utils/constants.dart';
 
 class AuthProvider with ChangeNotifier {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  UserModel? _currentUser;
-  String? _token;
   bool _isLoading = false;
+  String? _token;
+  String? _refreshToken;
+  User? _user;
+  UserPermissions? _userPermissions;
 
-  UserModel? get currentUser => _currentUser;
-  String? get token => _token;
   bool get isLoading => _isLoading;
-  bool get isAuthenticated => _token != null && _currentUser != null;  Future<bool> login(String email, String password) async {
+  String? get token => _token;
+  String? get refreshToken => _refreshToken;
+  User? get user => _user;
+  UserPermissions? get userPermissions => _userPermissions;
+
+  bool get isAuthenticated => _token != null;
+
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    print('AuthProvider: Starting login for $email');
     _isLoading = true;
     notifyListeners();
-    
-    try {
-      if (kDebugMode) {
-        print('Intentando iniciar sesión con email: $email');
-        print('URL de login: ${ApiConstants.loginUrl}');
-      }
 
+    try {
       final response = await http.post(
         Uri.parse(ApiConstants.loginUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        body: json.encode({
           'email': email,
           'password': password,
         }),
       );
 
-      _isLoading = false;
-
-      if (kDebugMode) {
-        print('Código de estado de respuesta: ${response.statusCode}');
-        print('Cuerpo de respuesta: ${response.body}');
-      }
+      print('AuthProvider: Login response status: ${response.statusCode}');
+      print('AuthProvider: Login response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = json.decode(response.body);
         _token = data['access'];
-        await _storage.write(key: 'auth_token', value: _token);
-        await _storage.write(key: 'refresh_token', value: data['refresh']);
-
-        if (kDebugMode) {
-          print('Token obtenido exitosamente. Obteniendo datos del usuario...');
-        }
-
-        // Fetch user data
-        await _fetchUserData();
+        _refreshToken = data['refresh'];
         
-        if (kDebugMode) {
-          print('Usuario autenticado: ${_currentUser != null ? 'Sí' : 'No'}');
+        print('AuthProvider: Token received: ${_token?.substring(0, 20)}...');
+        
+        // Create user object from token data if available
+        if (data.containsKey('user')) {
+          _user = User.fromJson(data['user']);
+          print('AuthProvider: User loaded from login: ${_user?.email}');
         }
+        
+        // Load user permissions after successful login
+        await loadUserPermissions();
         
         notifyListeners();
-        return true;
+        return {'success': true, 'message': 'Login exitoso'};
       } else {
-        if (kDebugMode) {
-          print('Error en la autenticación: ${response.body}');
-        }
-        notifyListeners();
-        return false;
+        final errorData = json.decode(response.body);
+        return {'success': false, 'message': errorData['detail'] ?? 'Error de autenticación'};
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Excepción en login: $e');
-      }
+      print('AuthProvider: Login error: $e');
+      return {'success': false, 'message': 'Error de conexión: $e'};
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return false;
     }
   }
-  
-  Future<Map<String, dynamic>> register(String email, String password, String passwordConfirm, String firstName, String lastName) async {
+
+  Future<bool> loadUserFromToken(String token) async {
+    print('AuthProvider: Loading user from token: ${token.substring(0, 20)}...');
+    _token = token;
     _isLoading = true;
     notifyListeners();
+
+    try {
+      // Load user permissions with the token
+      await loadUserPermissions();
+      
+      // If we successfully loaded permissions, consider the token valid
+      if (_userPermissions != null) {
+        print('AuthProvider: Successfully loaded user from token');
+        return true;
+      }
+      
+      print('AuthProvider: Failed to load user permissions');
+      return false;
+    } catch (e) {
+      print('AuthProvider: Error loading user from token: $e');
+      _token = null;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadUserPermissions() async {
+    if (_token == null) {
+      print('AuthProvider: No token available for loading permissions');
+      return;
+    }
+
+    print('AuthProvider: Loading user permissions...');
     
     try {
-      if (kDebugMode) {
-        print('Intentando registrar usuario con email: $email');
-        print('URL de registro: ${ApiConstants.registerUrl}');
-      }
+      final response = await http.get(
+        Uri.parse(ApiConstants.userPermissionsUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+      );
 
+      print('AuthProvider: Permissions response status: ${response.statusCode}');
+      print('AuthProvider: Permissions response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        _userPermissions = UserPermissions.fromJson(data);
+        print('AuthProvider: User permissions loaded: ${_userPermissions?.role}');
+        notifyListeners();
+      } else {
+        print('AuthProvider: Error loading permissions: ${response.statusCode}');
+        print('AuthProvider: Error body: ${response.body}');
+      }
+    } catch (e) {
+      print('AuthProvider: Exception loading user permissions: $e');
+    }
+  }
+
+  bool canAccessModule(String module) {
+    return _userPermissions?.canAccessModule(module) ?? false;
+  }
+
+  bool get canManageUsers {
+    return _userPermissions?.canManageUsers ?? false;
+  }
+
+  void logout() {
+    _token = null;
+    _refreshToken = null;
+    _user = null;
+    _userPermissions = null;
+    notifyListeners();
+  }
+
+  Future<Map<String, dynamic>> register(String email, String password, String passwordConfirm, String firstName, String lastName) async {
+    print('AuthProvider: Starting registration for $email');
+    _isLoading = true;
+    notifyListeners();
+
+    try {
       final response = await http.post(
         Uri.parse(ApiConstants.registerUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        body: json.encode({
           'email': email,
           'password': password,
           'password_confirm': passwordConfirm,
@@ -99,101 +164,22 @@ class AuthProvider with ChangeNotifier {
         }),
       );
 
-      _isLoading = false;
-      notifyListeners();
+      print('AuthProvider: Registration response status: ${response.statusCode}');
+      print('AuthProvider: Registration response body: ${response.body}');
 
-      if (kDebugMode) {
-        print('Código de estado de respuesta: ${response.statusCode}');
-        print('Cuerpo de respuesta: ${response.body}');
-      }
-
-      final responseData = jsonDecode(response.body);
-      
       if (response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': responseData['message'] ?? 'Usuario registrado exitosamente'
-        };
+        return {'success': true, 'message': 'Usuario registrado exitosamente'};
       } else {
-        return {
-          'success': false,
-          'message': responseData['message'] ?? 'Error al registrar usuario',
-          'errors': responseData
-        };
+        final errorData = json.decode(response.body);
+        print('AuthProvider: Registration errors: $errorData');
+        return {'success': false, 'errors': errorData};
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Excepción en registro: $e');
-      }
+      print('AuthProvider: Registration error: $e');
+      return {'success': false, 'message': 'Error de conexión: $e'};
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return {
-        'success': false,
-        'message': 'Error de conexión: $e'
-      };
     }
-  }
-  Future<void> loadUserFromToken(String token) async {
-    _token = token;
-    if (kDebugMode) {
-      print('Cargando usuario desde token guardado');
-    }
-    await _fetchUserData();
-    if (kDebugMode) {
-      print('Usuario cargado desde token: ${_currentUser != null ? 'Sí' : 'No'}');
-    }
-    notifyListeners();
-  }Future<void> _fetchUserData() async {
-    if (_token == null) {
-      if (kDebugMode) {
-        print('No se puede obtener datos del usuario: token es nulo');
-      }
-      return;
-    }
-
-    try {
-      String url = ApiConstants.userProfileUrl;
-      if (kDebugMode) {
-        print('Obteniendo datos de usuario desde: $url');
-        print('Token utilizado: ${_token!.substring(0, Math.min(10, _token!.length))}...');
-      }
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_token',
-        },
-      );
-
-      if (kDebugMode) {
-        print('Respuesta de datos de usuario - Código: ${response.statusCode}');
-        print('Respuesta de datos de usuario - Cuerpo: ${response.body}');
-      }
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _currentUser = UserModel.fromJson(data);
-        if (kDebugMode) {
-          print('Usuario cargado exitosamente: ${_currentUser?.email}');
-        }
-      } else {
-        if (kDebugMode) {
-          print('Error al obtener datos del usuario. Código: ${response.statusCode}');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching user data: $e');
-      }
-    }
-  }
-
-  Future<void> logout() async {
-    _token = null;
-    _currentUser = null;
-    await _storage.delete(key: 'auth_token');
-    await _storage.delete(key: 'refresh_token');
-    notifyListeners();
   }
 }

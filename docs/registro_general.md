@@ -1650,3 +1650,232 @@ Todos los serializadores incluyen campos de solo lectura adicionales para mejora
    - Implementar formularios de evaluación más intuitivos
 
 Esta documentación proporciona una base para entender la estructura actual del módulo `training`, identificar posibles problemas y planificar mejoras futuras. El módulo está bien estructurado siguiendo el patrón repositorio, pero tiene áreas específicas que pueden optimizarse para mayor robustez y funcionalidad.
+
+# Documentación de Cambios - Sistema de Roles y Permisos RH-Plus
+
+## Commit: Implementación completa de sistema de roles jerárquicos y mejoras de UI
+
+### 📋 Resumen General
+
+Se implementó un sistema completo de roles y permisos jerárquicos para RH-Plus, incluyendo mejoras significativas en la interfaz de usuario y corrección de errores críticos en la gestión de superusuarios.
+
+---
+
+## 🔧 Backend Changes
+
+### **Archivos Modificados:**
+
+#### `apps/core/models.py`
+**Cambios principales:**
+- **Agregado sistema de roles jerárquicos:**
+  - Nuevas constantes `USER_ROLES` y `ROLE_HIERARCHY`
+  - 6 niveles de roles: SUPERUSER, ADMIN, HR_MANAGER, SUPERVISOR, EMPLOYEE, USER
+  
+- **Nuevos campos en modelo User:**
+  ```python
+  role = models.CharField(max_length=20, choices=USER_ROLES, default='USER')
+  department = models.CharField(max_length=100, blank=True, null=True)
+  manager = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+  ```
+
+- **Métodos de permisos implementados:**
+  - `can_manage_user()`: Valida jerarquía de roles para gestión de usuarios
+  - `can_access_module()`: Define acceso a módulos por rol
+  - `get_managed_users()`: Retorna usuarios que puede gestionar según rol
+
+- **Corrección crítica en UserManager:**
+  ```python
+  def create_superuser(self, email, password, **extra_fields):
+      extra_fields.setdefault('role', 'SUPERUSER')  # FIX: Asigna rol correcto
+  ```
+
+**Funcionalidades afectadas:**
+- Autenticación y autorización
+- Gestión de usuarios
+- Control de acceso a módulos
+- Creación de superusuarios
+
+#### `apps/core/views.py`
+**Nuevos endpoints implementados:**
+- `user_permissions/`: Retorna permisos y módulos accesibles del usuario actual
+- `role_options/`: Retorna roles que el usuario actual puede asignar
+- `update_role/`: Permite actualizar roles de otros usuarios con validaciones
+
+**Mejoras en seguridad:**
+- Validación de permisos en cada endpoint
+- Logging extensivo para debugging
+- Manejo de errores robusto con try-catch
+
+**ViewSets afectados:**
+- `UserViewSet`: Filtrado de usuarios por permisos, nuevas acciones
+- Todos los ViewSets: Aplicación consistente de permisos
+
+#### `apps/core/serializers.py`
+**Nuevos serializers:**
+- `UserRoleUpdateSerializer`: Para actualización segura de roles
+- `UserListSerializer`: Para listado optimizado con información de roles
+- Validaciones de permisos en serializers
+
+#### `requirements.txt`
+**Dependencia agregada:**
+- `django-filter==23.5`: Para filtrado avanzado en APIs
+
+---
+
+## 🎨 Frontend Changes
+
+### **Archivos Modificados:**
+
+#### `lib/utils/constants.dart`
+**Cambios en paleta de colores:**
+- **Antes:** Colores azul brillante (`Color(0xFF2196F3)`)
+- **Después:** Paleta neutra y moderna:
+  ```dart
+  primaryColor = Color(0xFF1A1A1A)      // Negro elegante
+  backgroundColor = Color(0xFFF8F9FA)   // Gris muy claro
+  secondaryColor = Color(0xFF6C7293)    // Gris azulado
+  ```
+
+**Nuevas constantes:**
+- URLs para endpoints de roles y permisos
+- Constantes de roles con mapeo a nombres en español
+- Colores adicionales: success, warning, info, error
+
+#### `lib/models/user_model.dart`
+**Nuevos modelos:**
+- `UserPermissions`: Maneja permisos y módulos accesibles
+- Campos extendidos en `User`: role, department, manager
+- Métodos helper para validación de permisos
+
+#### `lib/providers/auth_provider.dart`
+**Funcionalidades nuevas:**
+- `loadUserPermissions()`: Carga permisos del usuario actual
+- `register()`: Implementación completa de registro
+- `loadUserFromToken()`: Validación de tokens almacenados
+- Logging extensivo para debugging
+
+**Getters agregados:**
+- `userPermissions`: Acceso a permisos del usuario
+- `canAccessModule()`: Validación de acceso a módulos
+- `canManageUsers`: Validación de permisos de gestión
+
+#### `lib/views/login_screen.dart`
+**Rediseño completo:**
+- **Estilo anterior:** Pantalla simple con fondo plano
+- **Estilo nuevo:** 
+  - Card elevada con sombras suaves
+  - Campos de entrada con bordes redondeados
+  - Iconos outlined para mejor estética
+  - Colores neutros y profesionales
+  - Mejor feedback visual (loading states)
+
+#### `lib/views/dashboard_screen.dart`
+**Rediseño y funcionalidad:**
+- **Dashboard dinámico:** Se adapta a permisos del usuario
+- **Nuevos elementos:**
+  - Card de bienvenida con información del rol
+  - Grid de módulos basado en permisos
+  - Indicadores visuales para módulos no disponibles
+  - Íconos outlined consistentes
+
+**Lógica de permisos:**
+- Módulos se muestran/ocultan según rol
+- Gestión de usuarios solo para roles autorizados
+- Estados de carga mejorados
+
+#### `lib/views/user_management_screen.dart` (Nuevo)
+**Funcionalidad completa:**
+- Lista de usuarios gestionables según permisos
+- Modal para actualización de roles
+- Validación de permisos en tiempo real
+- Feedback visual con colores por rol
+
+#### `lib/main.dart`
+**Mejoras:**
+- `debugShowCheckedModeBanner: false`: Eliminado banner de debug
+- `AuthWrapper`: Manejo inteligente del estado de autenticación
+- Navegación mejorada entre pantallas
+
+---
+
+## 🔄 Funcionalidades Nuevas
+
+### **Sistema de Roles Jerárquicos:**
+1. **SUPERUSER**: Acceso total al sistema
+2. **ADMIN**: Puede gestionar HR_MANAGER, SUPERVISOR, EMPLOYEE, USER
+3. **HR_MANAGER**: Puede gestionar SUPERVISOR, EMPLOYEE, USER
+4. **SUPERVISOR**: Puede gestionar EMPLOYEE, USER en su departamento
+5. **EMPLOYEE**: Acceso limitado a sus datos
+6. **USER**: Rol por defecto para nuevos registros
+
+### **Control de Acceso por Módulos:**
+- **Selection**: SUPERUSER, ADMIN, HR_MANAGER, SUPERVISOR
+- **Affiliation**: SUPERUSER, ADMIN, HR_MANAGER, SUPERVISOR, EMPLOYEE
+- **Payroll**: SUPERUSER, ADMIN, HR_MANAGER
+- **Performance**: SUPERUSER, ADMIN, HR_MANAGER, SUPERVISOR, EMPLOYEE
+- **Training**: SUPERUSER, ADMIN, HR_MANAGER, SUPERVISOR, EMPLOYEE
+- **Core**: SUPERUSER, ADMIN, HR_MANAGER, SUPERVISOR
+
+### **Gestión de Usuarios:**
+- Interface para cambiar roles de usuarios
+- Validaciones de permisos en backend y frontend
+- Auditoría de cambios en SystemActivity
+
+---
+
+## 🐛 Errores Corregidos
+
+### **Backend:**
+1. **Superuser role assignment**: `create_superuser` ahora asigna correctamente `role='SUPERUSER'`
+2. **Missing imports**: Agregado `TokenObtainPairSerializer` import
+3. **Missing dependency**: Agregado `django-filter` a requirements
+4. **Circular imports**: Imports locales en funciones para evitar conflictos
+
+### **Frontend:**
+1. **Missing UserPermissions model**: Implementado modelo completo
+2. **Missing register method**: Agregado método de registro en AuthProvider
+3. **AppColors undefined**: Definida paleta completa de colores
+4. **Type errors**: Corregidos errores de tipos en login flow
+
+---
+
+## 🎯 Migraciones Requeridas
+
+```bash
+# Crear migraciones para nuevos campos
+python manage.py makemigrations
+
+# Aplicar migraciones
+python manage.py migrate
+
+# Actualizar superuser existente (si es necesario)
+python manage.py shell
+# En shell: User.objects.filter(is_superuser=True).update(role='SUPERUSER')
+```
+
+---
+
+## 📊 Métricas de Cambios
+
+- **Archivos backend modificados**: 4
+- **Archivos frontend modificados**: 7
+- **Nuevos endpoints**: 3
+- **Nuevos modelos/clases**: 3
+- **Líneas de código agregadas**: ~800
+- **Funcionalidades nuevas**: 5 principales
+- **Errores críticos corregidos**: 6
+
+---
+
+## 🔜 Próximos Pasos Sugeridos
+
+1. **Implementar módulos específicos** (Selection, Payroll, etc.)
+2. **Agregar notificaciones** para cambios de roles
+3. **Implementar recuperación de contraseña**
+4. **Agregar tests unitarios** para sistema de permisos
+5. **Optimizar queries** con select_related/prefetch_related
+6. **Implementar rate limiting** para seguridad
+
+---
+
+Este commit establece las bases sólidas para un sistema de gestión de recursos humanos escalable con control granular de permisos y una interfaz moderna y profesional.

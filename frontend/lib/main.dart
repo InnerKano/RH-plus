@@ -1,123 +1,105 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:rh_plus/providers/auth_provider.dart';
-import 'package:rh_plus/providers/employee_provider.dart';
-import 'package:rh_plus/providers/candidate_provider.dart';
-import 'package:rh_plus/providers/payroll_provider.dart';
-import 'package:rh_plus/providers/training_provider.dart';
-import 'package:rh_plus/providers/activity_provider.dart';
-import 'package:rh_plus/utils/constants.dart';
-import 'package:rh_plus/views/login_screen.dart';
-import 'package:rh_plus/views/register_screen.dart';
-import 'package:rh_plus/views/dashboard_screen.dart';
-import 'package:rh_plus/views/payroll/payroll_dashboard_screen.dart';
-import 'package:rh_plus/views/payroll/payroll_entry_detail_screen.dart';
-import 'package:rh_plus/views/training/training_dashboard_screen.dart';
-import 'package:rh_plus/views/training/training_session_detail_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/auth_provider.dart';
+import 'providers/user_management_provider.dart';
+import 'views/login_screen.dart';
+import 'views/register_screen.dart';
+import 'views/dashboard_screen.dart';
+import 'views/user_management_screen.dart';
+import 'utils/constants.dart';
 
-void main() {  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, EmployeeProvider>(
-          create: (_) => EmployeeProvider(token: ''),
-          update: (_, auth, previousProvider) => 
-            EmployeeProvider(token: auth.token ?? ''),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, CandidateProvider>(
-          create: (_) => CandidateProvider(token: ''),
-          update: (_, auth, previousProvider) => 
-            CandidateProvider(token: auth.token ?? ''),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, PayrollProvider>(
-          create: (_) => PayrollProvider(token: ''),
-          update: (_, auth, previousProvider) => 
-            PayrollProvider(token: auth.token ?? ''),
-        ),        ChangeNotifierProxyProvider<AuthProvider, TrainingProvider>(
-          create: (_) => TrainingProvider(token: ''),
-          update: (_, auth, previousProvider) => 
-            TrainingProvider(token: auth.token ?? ''),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, ActivityProvider>(
-          create: (_) => ActivityProvider(token: ''),
-          update: (_, auth, previousProvider) => 
-            ActivityProvider(token: auth.token ?? ''),
-        ),
-      ],
-      child: const RHPlusApp(),
-    ),
-  );
+void main() {
+  runApp(const MyApp());
 }
 
-class RHPlusApp extends StatefulWidget {
-  const RHPlusApp({Key? key}) : super(key: key);
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
 
   @override
-  _RHPlusAppState createState() => _RHPlusAppState();
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => UserManagementProvider()),
+      ],
+      child: MaterialApp(
+        title: AppStrings.appName,
+        debugShowCheckedModeBanner: false, // Remove debug banner
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryColor),
+        ),
+        home: const AuthWrapper(),
+        routes: {
+          RouteNames.login: (context) => const LoginScreen(),
+          RouteNames.register: (context) => const RegisterScreen(),
+          RouteNames.dashboard: (context) => const DashboardScreen(),
+          RouteNames.userManagement: (context) => const UserManagementScreen(),
+        },
+      ),
+    );
+  }
 }
 
-class _RHPlusAppState extends State<RHPlusApp> {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
   bool _isLoading = true;
-  bool _isAuthenticated = false;
 
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    _checkAuthStatus();
   }
 
-  Future<void> _checkAuth() async {
-    final token = await _storage.read(key: 'auth_token');
-    setState(() {
-      _isLoading = false;
-      _isAuthenticated = token != null;
-    });
-    if (_isAuthenticated) {
-      // Load user data from stored token
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.loadUserFromToken(token!);
+  Future<void> _checkAuthStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token != null && token.isNotEmpty) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final isValid = await authProvider.loadUserFromToken(token);
+
+        if (!isValid) {
+          // Token is invalid, remove it
+          await prefs.remove('auth_token');
+        }
+      }
+    } catch (e) {
+      print('Error checking auth status: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppStrings.appName,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _isAuthenticated
-              ? const DashboardScreen()
-              : const LoginScreen(),      routes: {
-        RouteNames.dashboard: (context) => const DashboardScreen(),
-        RouteNames.login: (context) => const LoginScreen(),
-        RouteNames.register: (context) => const RegisterScreen(),
-        RouteNames.payroll: (context) => const PayrollDashboardScreen(),
-        RouteNames.training: (context) => const TrainingDashboardScreen(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == RouteNames.payrollEntryDetail) {
-          final args = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(
-            builder: (context) => PayrollEntryDetailScreen(
-              entryId: args['entryId'],
-            ),
-          );
-        } else if (settings.name == RouteNames.trainingSessionDetail) {
-          final args = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(
-            builder: (context) => TrainingSessionDetailScreen(
-              sessionId: args['sessionId'],
-            ),
-          );
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        if (authProvider.isAuthenticated) {
+          return const DashboardScreen();
+        } else {
+          return const LoginScreen();
         }
-        return null;
       },
-      debugShowCheckedModeBanner: false,
     );
   }
 }

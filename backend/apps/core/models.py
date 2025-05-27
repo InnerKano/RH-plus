@@ -1,6 +1,26 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
+# User roles hierarchy
+USER_ROLES = (
+    ('SUPERUSER', 'Superusuario'),
+    ('ADMIN', 'Administrador'),
+    ('HR_MANAGER', 'Personal de RRHH'),
+    ('SUPERVISOR', 'Supervisor/Gerente'),
+    ('EMPLOYEE', 'Empleado'),
+    ('USER', 'Usuario Básico'),  # Default role for new registrations
+)
+
+# Role hierarchy for permission checking
+ROLE_HIERARCHY = {
+    'SUPERUSER': 0,
+    'ADMIN': 1,
+    'HR_MANAGER': 2,
+    'SUPERVISOR': 3,
+    'EMPLOYEE': 4,
+    'USER': 5,
+}
+
 class UserManager(BaseUserManager):
     """Manager for custom user model."""
     
@@ -21,12 +41,20 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password):
+    def create_superuser(self, email, password, **extra_fields):
         """Create and save a new superuser."""
-        user = self.create_user(email, password)
-        user.is_staff = True
-        user.is_superuser = True
-        user.save(using=self._db)
+        # Set default values for superuser
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'SUPERUSER')  # Set role to SUPERUSER
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+        
+        user = self.create_user(email, password, **extra_fields)
+        print(f"Created superuser with role: {user.role}")
         return user
 
 class User(AbstractUser):
@@ -41,6 +69,32 @@ class User(AbstractUser):
     email = models.EmailField(max_length=255, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    
+    # Add role field
+    role = models.CharField(
+        max_length=20, 
+        choices=USER_ROLES, 
+        default='USER',
+        verbose_name="Rol"
+    )
+    
+    # Add department for supervisors to manage their teams
+    department = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True,
+        verbose_name="Departamento"
+    )
+    
+    # Add manager field for hierarchy
+    manager = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='managed_users',
+        verbose_name="Supervisor"
+    )
     
     # Añadimos related_name para evitar conflictos con el modelo User de Django
     groups = models.ManyToManyField(
@@ -64,6 +118,65 @@ class User(AbstractUser):
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+
+    def can_manage_user(self, target_user):
+        """Check if this user can manage another user based on role hierarchy."""
+        print(f"Checking if {self.email} (role: {self.role}) can manage user with role: {target_user.role}")
+        
+        if self.role == 'SUPERUSER':
+            return True
+        
+        current_level = ROLE_HIERARCHY.get(self.role, 999)
+        target_level = ROLE_HIERARCHY.get(target_user.role, 999)
+        
+        # Users can only manage users with lower hierarchy levels
+        if current_level < target_level:
+            # Additional checks based on role
+            if self.role == 'ADMIN':
+                # Admins cannot create other admins or superusers
+                return target_user.role not in ['ADMIN', 'SUPERUSER']
+            elif self.role == 'HR_MANAGER':
+                # HR can only manage supervisors and employees
+                return target_user.role in ['SUPERVISOR', 'EMPLOYEE', 'USER']
+            elif self.role == 'SUPERVISOR':
+                # Supervisors can only manage employees in their department
+                return (target_user.role in ['EMPLOYEE', 'USER'] and 
+                       target_user.department == self.department)
+        
+        return False
+    
+    def can_access_module(self, module_name):
+        """Check if user can access a specific module."""
+        module_permissions = {
+            'selection': ['SUPERUSER', 'ADMIN', 'HR_MANAGER', 'SUPERVISOR'],
+            'affiliation': ['SUPERUSER', 'ADMIN', 'HR_MANAGER', 'SUPERVISOR', 'EMPLOYEE'],
+            'payroll': ['SUPERUSER', 'ADMIN', 'HR_MANAGER'],
+            'performance': ['SUPERUSER', 'ADMIN', 'HR_MANAGER', 'SUPERVISOR', 'EMPLOYEE'],
+            'training': ['SUPERUSER', 'ADMIN', 'HR_MANAGER', 'SUPERVISOR', 'EMPLOYEE'],
+            'core': ['SUPERUSER', 'ADMIN', 'HR_MANAGER', 'SUPERVISOR'],
+        }
+        
+        result = self.role in module_permissions.get(module_name, [])
+        print(f"User {self.email} (role: {self.role}) can access {module_name}: {result}")
+        return result
+    
+    def get_managed_users(self):
+        """Get users that this user can manage."""
+        print(f"Getting managed users for {self.email} (role: {self.role})")
+        
+        if self.role == 'SUPERUSER':
+            return User.objects.all()
+        elif self.role == 'ADMIN':
+            return User.objects.exclude(role__in=['ADMIN', 'SUPERUSER'])
+        elif self.role == 'HR_MANAGER':
+            return User.objects.filter(role__in=['SUPERVISOR', 'EMPLOYEE', 'USER'])
+        elif self.role == 'SUPERVISOR':
+            return User.objects.filter(
+                role__in=['EMPLOYEE', 'USER'],
+                department=self.department
+            )
+        else:
+            return User.objects.none()
 
 class Role(models.Model):
     """User roles within the system."""
