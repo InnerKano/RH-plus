@@ -76,10 +76,8 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
-    Future<Map<String, dynamic>> register(String email, String password, String passwordConfirm, 
-      String firstName, String lastName, String registerType,
-      {String? companyName, String? companyTaxId, String? companyAddress, 
-      String? companyPhone, String? companyEmail, String? companyWebsite, int? companyId}) async {
+  
+  Future<Map<String, dynamic>> register(String email, String password, String passwordConfirm, String firstName, String lastName) async {
     _isLoading = true;
     notifyListeners();
     
@@ -87,37 +85,18 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) {
         print('Intentando registrar usuario con email: $email');
         print('URL de registro: ${ApiConstants.registerUrl}');
-        print('Tipo de registro: $registerType');
-      }
-
-      // Crear objeto de datos base
-      final Map<String, dynamic> requestData = {
-        'email': email,
-        'password': password,
-        'password_confirm': passwordConfirm,
-        'first_name': firstName,
-        'last_name': lastName,
-        'register_type': registerType,
-      };
-      
-      // Añadir campos específicos según el tipo de registro
-      if (registerType == 'new_company') {
-        requestData.addAll({
-          'company_name': companyName,
-          'company_tax_id': companyTaxId,
-          'company_address': companyAddress,
-          'company_phone': companyPhone,
-          if (companyEmail != null) 'company_email': companyEmail,
-          if (companyWebsite != null) 'company_website': companyWebsite,
-        });
-      } else if (registerType == 'join_company') {
-        requestData['company_id'] = companyId;
       }
 
       final response = await http.post(
         Uri.parse(ApiConstants.registerUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestData),
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'password_confirm': passwordConfirm,
+          'first_name': firstName,
+          'last_name': lastName,
+        }),
       );
 
       _isLoading = false;
