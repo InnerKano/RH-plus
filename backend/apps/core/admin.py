@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Role, UserRole
+from .models import User, Role, Company, CompanyUser, SystemActivity
 
 import uuid
 
@@ -42,9 +42,36 @@ class RoleAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     search_fields = ('name',)
 
-@admin.register(UserRole)
-class UserRoleAdmin(admin.ModelAdmin):
-    """Admin for UserRole model."""
-    list_display = ('user', 'role')
-    search_fields = ('user__email', 'role__name')
-    list_filter = ('role',)
+@admin.register(Company)
+class CompanyAdmin(admin.ModelAdmin):
+    """Admin for Company model."""
+    list_display = ('name', 'tax_id', 'status', 'is_active', 'created_at', 'approved_at')
+    search_fields = ('name', 'tax_id')
+    list_filter = ('status', 'is_active')
+    readonly_fields = ('status', 'is_active', 'created_at', 'approved_at', 'approved_by')
+    fieldsets = (
+        (None, {'fields': ('name', 'tax_id', 'address', 'phone', 'email', 'website')}),
+        ('Status', {'fields': ('status', 'is_active', 'approved_by', 'approved_at', 'created_at')}),
+    )
+
+@admin.register(CompanyUser)
+class CompanyUserAdmin(admin.ModelAdmin):
+    """Admin for CompanyUser model."""
+    list_display = ('user', 'company', 'status', 'is_primary', 'created_at', 'approved_at')
+    search_fields = ('user__email', 'company__name')
+    list_filter = ('status', 'is_primary', 'company')
+    readonly_fields = ('created_at', 'approved_at', 'approved_by')
+    filter_horizontal = ('roles',)
+    
+    fieldsets = (
+        (None, {'fields': ('user', 'company', 'roles', 'is_primary')}),
+        ('Status', {'fields': ('status', 'approved_by', 'approved_at', 'created_at')}),
+    )
+
+@admin.register(SystemActivity)
+class SystemActivityAdmin(admin.ModelAdmin):
+    """Admin for SystemActivity model."""
+    list_display = ('title', 'type', 'company', 'timestamp')
+    search_fields = ('title', 'description')
+    list_filter = ('type', 'company', 'timestamp')
+    readonly_fields = ('timestamp',)

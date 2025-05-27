@@ -1,11 +1,12 @@
 from django.db import models
-from apps.core.models import User
+from apps.core.models import User, Company
 
 class SelectionStage(models.Model):
     """Selection stage model."""
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     order = models.IntegerField(default=0)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='selection_stages')
     
     def __str__(self):
         return self.name
@@ -39,6 +40,7 @@ class Candidate(models.Model):
     address = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
     current_stage = models.ForeignKey(SelectionStage, on_delete=models.SET_NULL, null=True, blank=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='candidates')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -50,13 +52,27 @@ class SelectionProcess(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     start_date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_processes')
+    end_date = models.DateField(blank=True, null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='selection_processes')
+    stages = models.ManyToManyField(SelectionStage, through='ProcessStage')
     candidates = models.ManyToManyField(Candidate, through='ProcessCandidate')
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_processes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
     
     def __str__(self):
         return self.name
+
+class ProcessStage(models.Model):
+    """Many-to-many relationship between selection processes and stages with additional data."""
+    process = models.ForeignKey(SelectionProcess, on_delete=models.CASCADE)
+    stage = models.ForeignKey(SelectionStage, on_delete=models.CASCADE)
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        unique_together = ('process', 'stage')
+        ordering = ['order']
 
 class ProcessCandidate(models.Model):
     """Many-to-many relationship between selection processes and candidates with additional data."""

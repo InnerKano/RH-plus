@@ -3,7 +3,7 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.core.validators import MinValueValidator
-from apps.core.models import User
+from apps.core.models import User, Company
 from apps.affiliation.models import Employee
 from decimal import Decimal
 

@@ -1,12 +1,16 @@
 from django.db import models
-from apps.core.models import User
+from apps.core.models import User, Company
 from apps.affiliation.models import Employee
 
 class TrainingType(models.Model):
     """Types of training like induction, re-induction, skill development, etc."""
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='training_types')
     is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        unique_together = ('name', 'company')
     
     def __str__(self):
         return self.name
@@ -16,6 +20,7 @@ class TrainingProgram(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
     training_type = models.ForeignKey(TrainingType, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='training_programs')
     duration_hours = models.DecimalField(max_digits=5, decimal_places=2)
     materials = models.TextField(blank=True, null=True)
     objectives = models.TextField()

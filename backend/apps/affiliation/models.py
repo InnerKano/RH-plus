@@ -1,5 +1,5 @@
 from django.db import models
-from apps.core.models import User
+from apps.core.models import User, Company
 from apps.selection.models import Candidate
 
 class Employee(models.Model):
@@ -14,6 +14,7 @@ class Employee(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     candidate = models.OneToOneField(Candidate, on_delete=models.SET_NULL, null=True, blank=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='employees')
     employee_id = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -35,8 +36,12 @@ class Employee(models.Model):
 
 class AffiliationType(models.Model):
     """Types of affiliations like ARL, EPS, Pension, etc."""
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='affiliation_types')
+    
+    class Meta:
+        unique_together = ('name', 'company')
     
     def __str__(self):
         return self.name

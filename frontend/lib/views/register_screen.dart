@@ -18,11 +18,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordConfirmController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  
+  // Nuevos controladores para campos de empresa
+  final _companyNameController = TextEditingController();
+  final _companyTaxIdController = TextEditingController();
+  final _companyAddressController = TextEditingController();
+  final _companyPhoneController = TextEditingController();
+  final _companyEmailController = TextEditingController();
+  final _companyWebsiteController = TextEditingController();
+  
+  // Variable para tipo de registro seleccionado
+  String _registerType = 'no_company'; // Valor por defecto
+  
+  // Variable para ID de empresa si elige unirse a una
+  int? _selectedCompanyId;
+  
   bool _isPasswordVisible = false;
   bool _isPasswordConfirmVisible = false;
   String? _errorMessage;
   Map<String, String> _fieldErrors = {};
-
   @override
   void dispose() {
     _emailController.dispose();
@@ -30,9 +44,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordConfirmController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
+    // Dispose de los nuevos controladores
+    _companyNameController.dispose();
+    _companyTaxIdController.dispose();
+    _companyAddressController.dispose();
+    _companyPhoneController.dispose();
+    _companyEmailController.dispose();
+    _companyWebsiteController.dispose();
     super.dispose();
   }
-
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -41,12 +61,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Preparar argumentos según el tipo de registro
+      Map<String, dynamic> extraArgs = {};
+      
+      if (_registerType == 'new_company') {
+        extraArgs = {
+          'companyName': _companyNameController.text.trim(),
+          'companyTaxId': _companyTaxIdController.text.trim(),
+          'companyAddress': _companyAddressController.text.trim(),
+          'companyPhone': _companyPhoneController.text.trim(),
+          'companyEmail': _companyEmailController.text.trim(),
+          'companyWebsite': _companyWebsiteController.text.trim(),
+        };
+      } else if (_registerType == 'join_company') {
+        extraArgs = {
+          'companyId': _selectedCompanyId,
+        };
+      }
+      
       final result = await authProvider.register(
         _emailController.text.trim(),
         _passwordController.text,
         _passwordConfirmController.text,
         _firstNameController.text.trim(),
         _lastNameController.text.trim(),
+        _registerType,
+        companyName: extraArgs['companyName'],
+        companyTaxId: extraArgs['companyTaxId'],
+        companyAddress: extraArgs['companyAddress'],
+        companyPhone: extraArgs['companyPhone'],
+        companyEmail: extraArgs['companyEmail'],
+        companyWebsite: extraArgs['companyWebsite'],
+        companyId: extraArgs['companyId'],
       );
 
       if (mounted) {
@@ -260,6 +307,188 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
+                      
+                      const SizedBox(height: 16.0),
+                      
+                      // Divider con texto para sección de empresa
+                      Row(
+                        children: const [
+                          Expanded(child: Divider()),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Text('Información de Empresa', 
+                              style: TextStyle(color: Colors.grey)),
+                          ),
+                          Expanded(child: Divider()),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16.0),
+                      
+                      // Selector de tipo de registro
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Tipo de Registro:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                          RadioListTile<String>(
+                            title: const Text('Usuario Individual'),
+                            value: 'no_company',
+                            groupValue: _registerType,
+                            onChanged: (value) {
+                              setState(() {
+                                _registerType = value!;
+                              });
+                            },
+                          ),
+                          RadioListTile<String>(
+                            title: const Text('Crear Nueva Empresa'),
+                            value: 'new_company',
+                            groupValue: _registerType,
+                            onChanged: (value) {
+                              setState(() {
+                                _registerType = value!;
+                              });
+                            },
+                          ),
+                          RadioListTile<String>(
+                            title: const Text('Unirse a Empresa Existente'),
+                            value: 'join_company',
+                            groupValue: _registerType,
+                            onChanged: (value) {
+                              setState(() {
+                                _registerType = value!;
+                              });
+                            },
+                          ),
+                          if (_getFieldError('register_type') != null)
+                            Text(
+                              _getFieldError('register_type')!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16.0),
+                      
+                      // Campos condicionales según el tipo de registro
+                      if (_registerType == 'new_company') ...[
+                        // Campos para nueva empresa
+                        TextFormField(
+                          controller: _companyNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Nombre de la Empresa',
+                            prefixIcon: const Icon(Icons.business),
+                            border: const OutlineInputBorder(),
+                            errorText: _getFieldError('company_name'),
+                          ),
+                          validator: (value) {
+                            if (_registerType == 'new_company' && (value == null || value.isEmpty)) {
+                              return 'Por favor ingrese el nombre de la empresa';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextFormField(
+                          controller: _companyTaxIdController,
+                          decoration: InputDecoration(
+                            labelText: 'ID Fiscal / RFC',
+                            prefixIcon: const Icon(Icons.numbers),
+                            border: const OutlineInputBorder(),
+                            errorText: _getFieldError('company_tax_id'),
+                          ),
+                          validator: (value) {
+                            if (_registerType == 'new_company' && (value == null || value.isEmpty)) {
+                              return 'Por favor ingrese el ID fiscal de la empresa';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextFormField(
+                          controller: _companyAddressController,
+                          decoration: InputDecoration(
+                            labelText: 'Dirección',
+                            prefixIcon: const Icon(Icons.location_on),
+                            border: const OutlineInputBorder(),
+                            errorText: _getFieldError('company_address'),
+                          ),
+                          validator: (value) {
+                            if (_registerType == 'new_company' && (value == null || value.isEmpty)) {
+                              return 'Por favor ingrese la dirección de la empresa';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextFormField(
+                          controller: _companyPhoneController,
+                          decoration: InputDecoration(
+                            labelText: 'Teléfono',
+                            prefixIcon: const Icon(Icons.phone),
+                            border: const OutlineInputBorder(),
+                            errorText: _getFieldError('company_phone'),
+                          ),
+                          validator: (value) {
+                            if (_registerType == 'new_company' && (value == null || value.isEmpty)) {
+                              return 'Por favor ingrese el teléfono de la empresa';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextFormField(
+                          controller: _companyEmailController,
+                          decoration: InputDecoration(
+                            labelText: 'Email de la Empresa (opcional)',
+                            prefixIcon: const Icon(Icons.email),
+                            border: const OutlineInputBorder(),
+                            errorText: _getFieldError('company_email'),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextFormField(
+                          controller: _companyWebsiteController,
+                          decoration: InputDecoration(
+                            labelText: 'Sitio Web (opcional)',
+                            prefixIcon: const Icon(Icons.web),
+                            border: const OutlineInputBorder(),
+                            errorText: _getFieldError('company_website'),
+                          ),
+                          keyboardType: TextInputType.url,
+                        ),
+                      ] else if (_registerType == 'join_company') ...[
+                        // Por ahora un campo simple para ID de empresa
+                        // En una implementación real, aquí iría un dropdown o una búsqueda
+                        // que permita seleccionar la empresa de una lista
+                        TextFormField(
+                          decoration: InputDecoration(
+                            labelText: 'ID de la Empresa',
+                            prefixIcon: const Icon(Icons.business),
+                            border: const OutlineInputBorder(),
+                            errorText: _getFieldError('company_id'),
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (_registerType == 'join_company') {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingrese el ID de la empresa';
+                              }
+                              if (int.tryParse(value) == null) {
+                                return 'Por favor ingrese un número válido';
+                              }
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            if (int.tryParse(value) != null) {
+                              _selectedCompanyId = int.parse(value);
+                            }
+                          },
+                        ),
+                      ],
                       
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 16.0),

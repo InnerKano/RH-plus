@@ -1,5 +1,5 @@
 from django.db import models
-from apps.core.models import User
+from apps.core.models import User, Company
 from apps.affiliation.models import Employee
 
 class EvaluationType(models.Model):
@@ -7,7 +7,11 @@ class EvaluationType(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     frequency = models.CharField(max_length=50, help_text="e.g., Annual, Semi-Annual, Quarterly")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='evaluation_types')
     is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        unique_together = ('name', 'company')
     
     def __str__(self):
         return self.name
@@ -32,6 +36,7 @@ class EvaluationPeriod(models.Model):
     evaluation_type = models.ForeignKey(EvaluationType, on_delete=models.CASCADE)
     start_date = models.DateField()
     end_date = models.DateField()
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='evaluation_periods')
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
