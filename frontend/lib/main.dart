@@ -9,6 +9,7 @@ import 'package:rh_plus/providers/training_provider.dart';
 import 'package:rh_plus/providers/activity_provider.dart';
 import 'package:rh_plus/utils/constants.dart';
 import 'package:rh_plus/views/login_screen.dart';
+import 'package:rh_plus/views/register_screen.dart';
 import 'package:rh_plus/views/dashboard_screen.dart';
 import 'package:rh_plus/views/payroll/payroll_dashboard_screen.dart';
 import 'package:rh_plus/views/payroll/payroll_entry_detail_screen.dart';
@@ -91,10 +92,10 @@ class _RHPlusAppState extends State<RHPlusApp> {
           ? const Center(child: CircularProgressIndicator())
           : _isAuthenticated
               ? const DashboardScreen()
-              : const LoginScreen(),
-      routes: {
+              : const LoginScreen(),      routes: {
         RouteNames.dashboard: (context) => const DashboardScreen(),
         RouteNames.login: (context) => const LoginScreen(),
+        RouteNames.register: (context) => const RegisterScreen(),
         RouteNames.payroll: (context) => const PayrollDashboardScreen(),
         RouteNames.training: (context) => const TrainingDashboardScreen(),
       },

@@ -146,10 +146,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                       AlwaysStoppedAnimation<Color>(Colors.white),
                                 )
                               : const Text(
-                                  AppStrings.login,
-                                  style: TextStyle(fontSize: 16.0),
+                                  AppStrings.login,                                  style: TextStyle(fontSize: 16.0),
                                 ),
                         ),
+                      ),
+                      const SizedBox(height: 16.0),
+                      
+                      // Register link
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(context, RouteNames.register);
+                        },
+                        child: const Text('¿No tienes cuenta? Regístrate'),
                       ),
                     ],
                   ),

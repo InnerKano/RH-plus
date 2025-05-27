@@ -206,3 +206,191 @@ Basado en el análisis de código, hay algunas áreas donde el workflow podría 
 4. **Validaciones**: Implementar validaciones más robustas para evitar inconsistencias de datos entre módulos.
 
 El sistema RH-Plus ya cuenta con una estructura sólida que cubre todo el ciclo de vida de un empleado, desde su contratación hasta su eventual salida, con capacidades para gestionar su desarrollo, evaluación y compensación durante su permanencia en la empresa.
+
+
+# Implementación de la Funcionalidad de Registro de Usuarios en RH-Plus
+
+**Fecha:** 26 de mayo de 2025
+
+## Resumen General
+
+Se ha implementado una funcionalidad completa de registro de usuarios en el sistema RH-Plus, permitiendo a nuevos usuarios crear sus cuentas de manera autónoma. Esta implementación abarca tanto el backend (Django) como el frontend (Flutter), aprovechando la estructura modular existente y manteniendo la coherencia visual con el resto de la aplicación.
+
+## Cambios Realizados
+
+### 1. Backend (Django)
+
+#### 1.1 Serializer para Registro de Usuarios
+- **Ubicación**: serializers.py
+- **Funcionalidad**: Se creó un nuevo serializer `UserRegistrationSerializer` que:
+  - Valida las contraseñas utilizando validadores de Django
+  - Verifica que las contraseñas coincidan
+  - Utiliza el `create_user` del modelo personalizado para el registro
+  - Maneja los campos email, password, password_confirm, first_name y last_name
+
+```python
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """Serializer for user registration."""
+    
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password_confirm = serializers.CharField(write_only=True, required=True)
+    
+    class Meta:
+        model = User
+        fields = ('email', 'password', 'password_confirm', 'first_name', 'last_name')
+        
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden"})
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data.pop('password_confirm')
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+        )
+        return user
+```
+
+#### 1.2 Endpoint para Registro de Usuarios
+- **Ubicación**: views.py
+- **Funcionalidad**: Se agregó una acción `register` al `UserViewSet` que:
+  - Permite acceso sin autenticación (permission_classes=[permissions.AllowAny])
+  - Utiliza el serializer de registro para validar y crear el usuario
+  - Registra una actividad del sistema cuando se crea un nuevo usuario
+  - Retorna una respuesta adecuada indicando éxito o error
+
+```python
+@action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+def register(self, request):
+    """Register a new user."""
+    serializer = UserRegistrationSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        user = serializer.save()
+        
+        # Create a system activity for the registration
+        SystemActivity.objects.create(
+            title="Nuevo usuario registrado",
+            description=f"Se ha registrado el usuario {user.email}",
+            type="employee"
+        )
+        
+        # Return success response
+        return Response(
+            {"message": "Usuario registrado exitosamente"},
+            status=status.HTTP_201_CREATED
+        )
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+```
+
+### 2. Frontend (Flutter)
+
+#### 2.1 Actualización de Constantes API y Rutas
+- **Ubicación**: constants.dart
+- **Funcionalidad**:
+  - Se agregó la URL del endpoint de registro en `ApiConstants`
+  - Se añadió la ruta de registro en `RouteNames`
+  - Se incorporaron textos necesarios para la pantalla de registro en `AppStrings`
+
+```dart
+// API Constants
+static const String registerUrl = '$baseUrl/api/core/users/register/';
+
+// Route Names
+static const String register = '/register';
+
+// App Strings
+static const String register = 'Registrarse';
+static const String firstName = 'Nombre';
+static const String lastName = 'Apellido';
+static const String confirmPassword = 'Confirmar Contraseña';
+```
+
+#### 2.2 Implementación del Método de Registro en AuthProvider
+- **Ubicación**: auth_provider.dart
+- **Funcionalidad**: Se creó un método `register` que:
+  - Envía los datos de registro al backend
+  - Maneja tanto los casos de éxito como los errores
+  - Proporciona información detallada sobre los errores específicos por campo
+  - Mantiene la consistencia con la implementación existente de login
+
+```dart
+Future<Map<String, dynamic>> register(String email, String password, String passwordConfirm, String firstName, String lastName) async {
+  _isLoading = true;
+  notifyListeners();
+  
+  try {
+    // Implementación de la solicitud HTTP
+    // Manejo de respuestas y errores
+    // Retorno de resultado estructurado
+  } catch (e) {
+    // Manejo de excepciones
+  }
+}
+```
+
+#### 2.3 Creación de la Pantalla de Registro
+- **Ubicación**: register_screen.dart
+- **Funcionalidad**: Se implementó una pantalla completa de registro que:
+  - Mantiene coherencia visual con la pantalla de login
+  - Incluye campos para email, nombre, apellido, contraseña y confirmación
+  - Implementa validaciones en el frontend para todos los campos
+  - Muestra errores específicos retornados por el backend
+  - Proporciona navegación entre pantallas de login y registro
+
+#### 2.4 Actualización de la Pantalla de Login
+- **Ubicación**: login_screen.dart
+- **Funcionalidad**: Se agregó un enlace a la pantalla de registro
+  - Permite a los usuarios navegar fácilmente a la pantalla de registro
+  - Mantiene una experiencia de usuario coherente
+
+```dart
+// Register link
+TextButton(
+  onPressed: () {
+    Navigator.pushReplacementNamed(context, RouteNames.register);
+  },
+  child: const Text('¿No tienes cuenta? Regístrate'),
+)
+```
+
+#### 2.5 Actualización de Rutas de la Aplicación
+- **Ubicación**: main.dart
+- **Funcionalidad**: Se agregó la ruta de registro al mapa de rutas de la aplicación
+  - Permite la navegación correcta entre pantallas
+  - Integra la nueva pantalla con el sistema de navegación existente
+
+## Beneficios Implementados
+
+1. **Autoservicio de Usuarios**: Los usuarios pueden registrarse de forma autónoma sin necesidad de un administrador
+2. **Validación Robusta**: Implementación de validaciones tanto en frontend como en backend
+3. **Experiencia de Usuario Mejorada**: Diseño coherente con el resto de la aplicación
+4. **Feedback Claro**: Mensajes de error específicos y claros para los usuarios
+5. **Auditabilidad**: Registro de nuevos usuarios en el sistema de actividades para seguimiento
+
+## Consideraciones de Seguridad
+
+1. **Validación de Contraseñas**: Uso de los validadores de Django para garantizar contraseñas seguras
+2. **Protección de Datos**: Las contraseñas se almacenan hasheadas utilizando los mecanismos de Django
+3. **Acceso Controlado**: El endpoint de registro está abierto, pero todas las demás funcionalidades requieren autenticación
+
+## Pruebas Realizadas
+
+- Registro exitoso de usuario con datos válidos
+- Manejo adecuado de errores (contraseñas que no coinciden, email duplicado, campos faltantes)
+- Navegación correcta entre pantallas de login y registro
+- Verificación de la creación de actividad del sistema al registrar un usuario
+
+## Próximos Pasos
+
+1. **Confirmación de Email**: Implementar verificación de correo electrónico para nuevos usuarios
+2. **Roles Predeterminados**: Asignar automáticamente roles básicos a nuevos usuarios
+3. **Protección contra Spam**: Agregar medidas como CAPTCHA o rate limiting para prevenir registros automatizados
+4. **Recuperación de Contraseña**: Implementar funcionalidad de recuperación de contraseña
+
+Esta implementación representa un paso importante hacia un sistema más accesible y autónomo, manteniendo al mismo tiempo los estándares de seguridad y la coherencia con la arquitectura existente.

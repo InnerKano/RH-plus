@@ -15,8 +15,7 @@ class AuthProvider with ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   String? get token => _token;
   bool get isLoading => _isLoading;
-  bool get isAuthenticated => _token != null && _currentUser != null;
-  Future<bool> login(String email, String password) async {
+  bool get isAuthenticated => _token != null && _currentUser != null;  Future<bool> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
     
@@ -75,6 +74,63 @@ class AuthProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+  
+  Future<Map<String, dynamic>> register(String email, String password, String passwordConfirm, String firstName, String lastName) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      if (kDebugMode) {
+        print('Intentando registrar usuario con email: $email');
+        print('URL de registro: ${ApiConstants.registerUrl}');
+      }
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.registerUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'password_confirm': passwordConfirm,
+          'first_name': firstName,
+          'last_name': lastName,
+        }),
+      );
+
+      _isLoading = false;
+      notifyListeners();
+
+      if (kDebugMode) {
+        print('Código de estado de respuesta: ${response.statusCode}');
+        print('Cuerpo de respuesta: ${response.body}');
+      }
+
+      final responseData = jsonDecode(response.body);
+      
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Usuario registrado exitosamente'
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Error al registrar usuario',
+          'errors': responseData
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Excepción en registro: $e');
+      }
+      _isLoading = false;
+      notifyListeners();
+      return {
+        'success': false,
+        'message': 'Error de conexión: $e'
+      };
     }
   }
   Future<void> loadUserFromToken(String token) async {

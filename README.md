@@ -110,7 +110,7 @@ DATABASE_URL=postgresql://username:password@localhost:5432/rhplus
 4. Migrar la base de datos:
 
 ```powershell
-python manage.py migrate
+
 ```
 
 5. Crear un superusuario:

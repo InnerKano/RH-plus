@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password
 from .models import User, Role, UserRole, SystemActivity
 
 class UserSerializer(serializers.ModelSerializer):
@@ -14,6 +15,31 @@ class UserSerializer(serializers.ModelSerializer):
     def get_roles(self, obj):
         user_roles = obj.userrole_set.all().select_related('role')
         return [{'id': role.role.id, 'name': role.role.name} for role in user_roles]
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """Serializer for user registration."""
+    
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password_confirm = serializers.CharField(write_only=True, required=True)
+    
+    class Meta:
+        model = User
+        fields = ('email', 'password', 'password_confirm', 'first_name', 'last_name')
+        
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden"})
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data.pop('password_confirm')
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+        )
+        return user
 
 class RoleSerializer(serializers.ModelSerializer):
     """Serializer for the Role model."""

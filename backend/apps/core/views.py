@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db.models import Count
 from django.utils import timezone
 from .models import User, Role, UserRole, SystemActivity
-from .serializers import UserSerializer, RoleSerializer, UserRoleSerializer, SystemActivitySerializer
+from .serializers import UserSerializer, RoleSerializer, UserRoleSerializer, SystemActivitySerializer, UserRegistrationSerializer
 from .repositories import UserRepository
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -22,6 +22,29 @@ class UserViewSet(viewsets.ModelViewSet):
         """Return the current user."""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def register(self, request):
+        """Register a new user."""
+        serializer = UserRegistrationSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # Create a system activity for the registration
+            SystemActivity.objects.create(
+                title="Nuevo usuario registrado",
+                description=f"Se ha registrado el usuario {user.email}",
+                type="employee"
+            )
+            
+            # Return success response
+            return Response(
+                {"message": "Usuario registrado exitosamente"},
+                status=status.HTTP_201_CREATED
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RoleViewSet(viewsets.ModelViewSet):
     """ViewSet for the Role model."""

@@ -5,6 +5,7 @@ class ApiConstants {
   // Authentication endpoints
   static const String loginUrl = '$baseUrl/api/core/token/';
   static const String refreshTokenUrl = '$baseUrl/api/core/token/refresh/';
+  static const String registerUrl = '$baseUrl/api/core/users/register/';
   
   // Core endpoints
   static const String userProfileUrl = '$baseUrl/api/core/users/me/';
@@ -20,8 +21,12 @@ class ApiConstants {
 class AppStrings {
   static const String appName = 'RH Plus';
   static const String login = 'Iniciar Sesión';
+  static const String register = 'Registrarse';
   static const String email = 'Correo Electrónico';
   static const String password = 'Contraseña';
+  static const String firstName = 'Nombre';
+  static const String lastName = 'Apellido';
+  static const String confirmPassword = 'Confirmar Contraseña';
   static const String dashboard = 'Panel Principal';
   static const String logout = 'Cerrar Sesión';
   
@@ -65,6 +70,7 @@ class AppConstants {
 class RouteNames {
   // Authentication
   static const String login = '/login';
+  static const String register = '/register';
   static const String resetPassword = '/reset-password';
   
   // Main routes
