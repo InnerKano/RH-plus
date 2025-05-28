@@ -2175,3 +2175,112 @@ entre frontend y backend.
 ```
 
 Este commit documenta todos los cambios necesarios que se realizaron para hacer funcionar correctamente la conexión entre el frontend y backend del módulo de capacitación, incluyendo las correcciones de errores y mejoras implementadas.
+Registro General de Cambios - RH Plus
+Commit: Corrección de conectividad del módulo de selección y optimización de providers
+Fecha: 28 de mayo de 2025
+
+Resumen General
+Se ha solucionado el problema de conectividad del módulo de selección con el backend, implementando la configuración correcta del SelectionProvider y corrigiendo las URLs de las peticiones API. Se optimizó la gestión de estado de los providers y se agregó un botón flotante para acceso directo al módulo de selección desde el dashboard.
+
+1. Corrección del Módulo de Selección
+1.1 Configuración correcta del SelectionProvider en main.dart
+Se modificó la configuración del SelectionProvider para seguir el mismo patrón que TrainingProvider, asegurando la correcta inicialización con el token de autenticación. El provider ahora se recrea automáticamente cuando cambia el token del usuario, garantizando que siempre tenga acceso correcto al backend.
+
+1.2 Verificación de URLs de API
+Se confirmó que las URLs en selection_service.dart utilizan correctamente el prefijo /api/, asegurando que las peticiones lleguen a los endpoints correctos del backend configurados en config/urls.py.
+
+1.3 Mejora en la inicialización del dashboard
+Se optimizó el método _initializeData() en dashboard_screen.dart para asegurar la correcta inicialización del SelectionProvider solo cuando el usuario tiene permisos de acceso al módulo y el widget está completamente montado.
+
+2. Mejoras en la Interfaz de Usuario
+2.1 Botón flotante para acceso al módulo de selección
+Se agregó un botón flotante (FloatingActionButton) que permite acceso directo al módulo de selección desde el dashboard. El botón solo aparece cuando el usuario tiene permisos para acceder al módulo de selección y está visualizando el dashboard principal.
+
+2.2 Optimización del widget de selección de módulos
+Se mejoró el widget _buildSelectionModule() para una mejor inicialización del provider, incluyendo verificaciones de permisos y manejo correcto del ciclo de vida del widget. La inicialización del provider se realiza solo cuando se accede al módulo por primera vez.
+
+3. Resolución de Problemas de Conectividad
+3.1 Diagnóstico del problema
+El error inicial mostraba peticiones 404 para /selection/candidates/ en lugar de /api/selection/candidates/, indicando un problema en la configuración de URLs entre frontend y backend.
+
+3.2 Verificación de la configuración del backend
+Se confirmó que las URLs del backend están correctamente configuradas en config/urls.py con el prefijo /api/ para todas las aplicaciones, incluyendo el módulo de selección.
+
+3.3 Verificación de ViewSets del backend
+Se confirmó que los ViewSets en views.py están correctamente implementados con los permisos de autenticación necesarios y los repositorios correspondientes para el acceso a datos.
+
+4. Estructura del Módulo de Selección
+4.1 Modelos implementados
+CandidateModel: Información completa de candidatos
+StageModel: Etapas del proceso de selección
+CandidateStageModel: Relación entre candidatos y etapas
+PositionModel: Posiciones disponibles para candidatos
+4.2 Servicios implementados
+SelectionService: Servicio completo con operaciones CRUD para candidatos, etapas, posiciones y analíticas
+Manejo de autenticación: Headers con Bearer token para todas las peticiones
+4.3 Vistas implementadas
+CandidateListView: Lista de candidatos con filtros y paginación
+StageListView: Gestión de etapas del proceso de selección
+CandidateForm: Formulario para agregar candidatos (en desarrollo)
+CandidateDetailView: Vista detallada de candidatos (en desarrollo)
+5. Estado Actual y Próximos Pasos
+5.1 Estado Actual
+Conectividad con backend: ✅ Solucionada completamente
+Autenticación: ✅ Token JWT correctamente configurado
+Navegación: ✅ Botón flotante y menú lateral funcionando
+Carga de datos: ✅ Candidatos y etapas se cargan correctamente
+Gestión de estado: ✅ Providers optimizados
+5.2 Funcionalidades operativas
+Dashboard de selección: ✅ Pestañas de Candidatos y Etapas
+Lista de candidatos: ✅ Con filtros por estado y búsqueda
+Gestión de etapas: ✅ CRUD completo de etapas del proceso
+Paginación: ✅ Carga progresiva de candidatos
+Manejo de errores: ✅ Mensajes informativos para el usuario
+5.3 Próximos Pasos
+Frontend:
+
+Completar implementación de CandidateForm y CandidateDetailView
+Agregar funcionalidad de carga de archivos (CV)
+Implementar analíticas y reportes
+Backend:
+
+Agregar validaciones adicionales en los serializers
+Implementar filtros avanzados para candidatos
+Agregar endpoints para analíticas del proceso de selección
+Integración:
+
+Pruebas end-to-end del flujo completo de selección
+Optimización de rendimiento para listas grandes de candidatos
+6. Aspectos Técnicos Destacados
+6.1 Patrones Implementados
+Provider Pattern: Gestión de estado centralizada con notificaciones automáticas
+Repository Pattern: Abstracción del acceso a datos en el backend
+Service Layer: Separación clara entre lógica de negocio y presentación
+6.2 Decisiones Técnicas
+Inicialización lazy del SelectionProvider: Solo se inicializa cuando el usuario accede al módulo
+Paginación automática: Carga progresiva de candidatos para mejor rendimiento
+Gestión de permisos: Verificación de acceso tanto en backend como frontend
+Manejo de errores robusto: Mensajes claros al usuario con opciones de reintento
+6.3 Mejoras en Seguridad
+Validación de permisos antes de mostrar funcionalidades
+Token JWT en todas las peticiones al backend
+Verificación del estado de montaje del widget antes de operaciones asíncronas
+7. Resolución de Bugs
+7.1 Bug de contexto desmontado
+Problema: Error "This widget has been unmounted" durante inicialización Solución: Verificación con mounted antes de operaciones de estado
+
+7.2 Bug de múltiples inicializaciones
+Problema: El provider se inicializaba múltiples veces Solución: Inicialización controlada en el momento adecuado del ciclo de vida
+
+7.3 Bug de URLs incorrectas
+Problema: Peticiones a URLs sin el prefijo /api/ Solución: Verificación y corrección de todas las URLs en selection_service.dart
+
+8. Conclusiones
+Los cambios implementados han resuelto completamente los problemas de conectividad del módulo de selección, estableciendo una base sólida para el desarrollo de funcionalidades adicionales. La arquitectura implementada permite:
+
+Escalabilidad: El patrón provider facilita agregar nuevas funcionalidades
+Mantenibilidad: Separación clara de responsabilidades entre servicios, providers y vistas
+Robustez: Manejo de errores y estados de carga bien implementados
+Experiencia de usuario: Navegación fluida y feedback claro al usuario
+El módulo de selección está ahora completamente operativo y listo para la implementación de funcionalidades avanzadas como formularios de candidatos, evaluaciones y reportes analíticos.
+
