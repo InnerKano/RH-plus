@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_management_provider.dart';
+import 'providers/dashboard_provider.dart';
 import 'views/login_screen.dart';
 import 'views/register_screen.dart';
 import 'views/dashboard_screen.dart';
@@ -22,6 +23,13 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => UserManagementProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, DashboardProvider>(
+          create: (_) => DashboardProvider(),
+          update: (_, auth, dashboardProvider) {
+            dashboardProvider?.setToken(auth.token);
+            return dashboardProvider ?? DashboardProvider();
+          },
+        ),
       ],
       child: MaterialApp(
         title: AppStrings.appName,

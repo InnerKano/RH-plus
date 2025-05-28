@@ -10,6 +10,7 @@ class User {
   final String? managerName;
   final bool isActive;
   final DateTime dateJoined;
+  final String? profileImage; // Added profileImage field
 
   User({
     required this.id,
@@ -23,6 +24,7 @@ class User {
     this.managerName,
     required this.isActive,
     required this.dateJoined,
+    this.profileImage, // Added profileImage parameter
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class User {
       managerName: json['manager_name'],
       isActive: json['is_active'] ?? true,
       dateJoined: DateTime.parse(json['date_joined'] ?? DateTime.now().toIso8601String()),
+      profileImage: json['profile_image'], // Added profileImage parsing
     );
   }
 

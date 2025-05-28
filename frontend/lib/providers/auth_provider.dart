@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
 
@@ -114,12 +115,26 @@ class AuthProvider with ChangeNotifier {
       );
 
       print('AuthProvider: Permissions response status: ${response.statusCode}');
-      print('AuthProvider: Permissions response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _userPermissions = UserPermissions.fromJson(data);
+        
+        // Also load user data if available
+        if (data['user'] != null) {
+          _user = User.fromJson(data['user']);
+          print('AuthProvider: User data updated: ${_user?.email}');
+        }
+        
         print('AuthProvider: User permissions loaded: ${_userPermissions?.role}');
+        notifyListeners();
+      } else if (response.statusCode == 401) {
+        print('AuthProvider: Token expired or invalid, logging out');
+        // Token is invalid, clear auth state
+        _token = null;
+        _refreshToken = null;
+        _user = null;
+        _userPermissions = null;
         notifyListeners();
       } else {
         print('AuthProvider: Error loading permissions: ${response.statusCode}');
@@ -130,20 +145,31 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> logout() async {
+    print('AuthProvider: Logging out user');
+    _token = null;
+    _refreshToken = null;
+    _user = null;
+    _userPermissions = null;
+    
+    // Clear stored token
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      print('AuthProvider: Stored token cleared');
+    } catch (e) {
+      print('AuthProvider: Error clearing stored token: $e');
+    }
+    
+    notifyListeners();
+  }
+
   bool canAccessModule(String module) {
     return _userPermissions?.canAccessModule(module) ?? false;
   }
 
   bool get canManageUsers {
     return _userPermissions?.canManageUsers ?? false;
-  }
-
-  void logout() {
-    _token = null;
-    _refreshToken = null;
-    _user = null;
-    _userPermissions = null;
-    notifyListeners();
   }
 
   Future<Map<String, dynamic>> register(String email, String password, String passwordConfirm, String firstName, String lastName) async {

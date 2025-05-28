@@ -16,6 +16,10 @@ class ApiConstants {
   static const String roleOptionsUrl = '$baseUrl/api/core/users/role_options/';
   static const String userPermissionsUrl = '$baseUrl/api/core/users/user_permissions/';
 
+  // Dashboard endpoints
+  static const String dashboardSummaryUrl = '$baseUrl/api/core/activities/dashboard_summary/';
+  static const String recentActivitiesUrl = '$baseUrl/api/core/activities/recent/';
+
   // Feature-specific timeouts (in seconds)
   static const int defaultTimeout = 30;
   static const int uploadTimeout = 120;
@@ -36,6 +40,7 @@ class AppColors {
   static const Color infoColor = Color(0xFF3498DB);
   
   // Text colors
+  static const Color textColor = Color(0xFF2C3E50); // Added textColor
   static const Color onPrimaryColor = Colors.white;
   static const Color onSecondaryColor = Colors.white;
   static const Color onBackgroundColor = Color(0xFF2C3E50);
