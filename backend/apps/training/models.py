@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 from apps.core.models import User
 from apps.affiliation.models import Employee
 
@@ -26,6 +28,16 @@ class TrainingProgram(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def clean(self):
+        if self.duration_hours <= 0:
+            raise ValidationError({'duration_hours': 'La duración debe ser mayor a 0 horas.'})
+        if not self.objectives:
+            raise ValidationError({'objectives': 'Los objetivos son obligatorios.'})
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 class TrainingSession(models.Model):
     """Individual training session of a program."""
@@ -53,6 +65,28 @@ class TrainingSession(models.Model):
     
     def __str__(self):
         return f"{self.program} - {self.session_date}"
+    
+    def clean(self):
+        if self.start_time >= self.end_time:
+            raise ValidationError({
+                'end_time': 'La hora de finalización debe ser posterior a la hora de inicio.'
+            })
+        if self.session_date < timezone.now().date():
+            raise ValidationError({
+                'session_date': 'La fecha de la sesión no puede ser en el pasado.'
+            })
+        if self.max_participants <= 0:
+            raise ValidationError({
+                'max_participants': 'El número máximo de participantes debe ser mayor a 0.'
+            })
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_full(self):
+        return self.attendances.count() >= self.max_participants
 
 class TrainingAttendance(models.Model):
     """Employee attendance in a training session."""
@@ -76,6 +110,20 @@ class TrainingAttendance(models.Model):
     
     def __str__(self):
         return f"{self.employee} - {self.session}"
+    
+    def clean(self):
+        if self.session.is_full and self.status == 'REGISTERED':
+            raise ValidationError({
+                'session': 'Esta sesión ya está llena.'
+            })
+        if self.evaluation_score is not None and (self.evaluation_score < 0 or self.evaluation_score > 5):
+            raise ValidationError({
+                'evaluation_score': 'La puntuación debe estar entre 0 y 5.'
+            })
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 class TrainingEvaluation(models.Model):
     """Evaluation of a training program."""
