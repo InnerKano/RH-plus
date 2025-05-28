@@ -1,7 +1,9 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from .models import TrainingType, TrainingProgram, TrainingSession, TrainingAttendance, TrainingEvaluation
 from .serializers import (
     TrainingTypeSerializer, TrainingProgramSerializer, TrainingSessionSerializer,
@@ -25,6 +27,55 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         return TrainingProgramRepository.get_active_programs()
+    
+    def perform_create(self, serializer):
+        try:
+            with transaction.atomic():
+                program = serializer.save(created_by=self.request.user)
+                record_activity(
+                    title="Nuevo programa de capacitación creado",
+                    description=f"Se ha creado el programa '{program.name}'",
+                    activity_type="training",
+                    user=self.request.user
+                )
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def perform_update(self, serializer):
+        try:
+            with transaction.atomic():
+                program = serializer.save()
+                record_activity(
+                    title="Programa de capacitación actualizado",
+                    description=f"Se ha actualizado el programa '{program.name}'",
+                    activity_type="training",
+                    user=self.request.user
+                )
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            program = self.get_object()
+            if program.sessions.exists():
+                return Response(
+                    {"error": "No se puede eliminar un programa que tiene sesiones"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            program.is_active = False
+            program.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     @action(detail=False, methods=['get'])
     def by_type(self, request):
@@ -108,20 +159,13 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
         return TrainingAttendance.objects.all()
     
     def perform_create(self, serializer):
-        serializer.save(registered_by=self.request.user)
-    
-    @action(detail=False, methods=['get'])
-    def by_employee(self, request):
-        """Return attendances by employee."""
-        employee_id = request.query_params.get('employee')
-        
-        if not employee_id:
-            return Response({"error": "Employee ID is required"}, status=400)
-        
-        attendances = TrainingAttendanceRepository.get_by_employee(employee_id)
-        
-        serializer = self.get_serializer(attendances, many=True)
-        return Response(serializer.data)
+        attendance = serializer.save(registered_by=self.request.user)
+        record_activity(
+            title="Registro de asistencia",
+            description=f"Se ha registrado la asistencia de {attendance.employee} a {attendance.session}",
+            activity_type="training",
+            user=self.request.user
+        )
     
     @action(detail=False, methods=['get'])
     def by_session(self, request):
@@ -132,23 +176,62 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
             return Response({"error": "Session ID is required"}, status=400)
         
         attendances = TrainingAttendanceRepository.get_by_session(session_id)
-        
         serializer = self.get_serializer(attendances, many=True)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'])
-    def mark_attended(self, request, pk=None):
-        """Mark an attendance record as attended."""
-        attendance = self.get_object()
+    @action(detail=False, methods=['get'])
+    def by_employee(self, request):
+        """Return attendances by employee."""
+        employee_id = request.query_params.get('employee')
         
-        attendance.status = 'ATTENDED'
-        attendance.save()
+        if not employee_id:
+            return Response({"error": "Employee ID is required"}, status=400)
         
-        serializer = self.get_serializer(attendance)
+        attendances = TrainingAttendanceRepository.get_by_employee(employee_id)
+        serializer = self.get_serializer(attendances, many=True)
         return Response(serializer.data)
 
 class TrainingEvaluationViewSet(viewsets.ModelViewSet):
     """ViewSet for TrainingEvaluation model."""
-    queryset = TrainingEvaluation.objects.all()
     serializer_class = TrainingEvaluationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return TrainingEvaluation.objects.all()
+    
+    def perform_create(self, serializer):
+        evaluation = serializer.save()
+        attendance = evaluation.attendance
+        
+        # Actualizar el score en la asistencia
+        avg_score = (
+            evaluation.content_rating +
+            evaluation.instructor_rating +
+            evaluation.materials_rating +
+            evaluation.usefulness_rating +
+            evaluation.overall_rating
+        ) / 5.0
+        
+        attendance.evaluation_score = avg_score
+        attendance.save()
+        
+        record_activity(
+            title="Nueva evaluación de capacitación",
+            description=f"Se ha registrado la evaluación para {attendance.session.program}",
+            activity_type="training",
+            user=self.request.user
+        )
+    
+    @action(detail=False, methods=['get'])
+    def by_program(self, request):
+        """Return evaluations by training program."""
+        program_id = request.query_params.get('program')
+        
+        if not program_id:
+            return Response({"error": "Program ID is required"}, status=400)
+        
+        evaluations = self.get_queryset().filter(
+            attendance__session__program_id=program_id
+        )
+        serializer = self.get_serializer(evaluations, many=True)
+        return Response(serializer.data)

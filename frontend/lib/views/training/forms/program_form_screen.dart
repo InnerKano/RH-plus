@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../utils/constants.dart';
 import '../../../models/training_models.dart';
 import '../../../providers/training_provider.dart';
+import '../../../widgets/loading_state_widget.dart';
+import '../../../widgets/error_dialog.dart';
 
 class ProgramFormScreen extends StatefulWidget {
   final TrainingProgramModel? program;
@@ -99,241 +101,233 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
         ),
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProgram,
-            child: Text(
-              'Guardar',
-              style: TextStyle(
-                color: _isLoading ? Colors.white54 : Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
-      body: _isLoading 
-        ? const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ),
-          )
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Basic Information Section
-                  _buildSection(
-                    title: 'Información Básica',
-                    icon: Icons.info_outline,
-                    children: [
-                      _buildTextFormField(
-                        controller: _nameController,
-                        label: 'Nombre del Programa',
-                        hint: 'Ingrese el nombre del programa',
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'El nombre es obligatorio';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTextFormField(
-                        controller: _descriptionController,
-                        label: 'Descripción',
-                        hint: 'Descripción detallada del programa',
-                        maxLines: 3,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'La descripción es obligatoria';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTextFormField(
-                        controller: _objectivesController,
-                        label: 'Objetivos',
-                        hint: 'Objetivos del programa de formación',
-                        maxLines: 3,
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Configuration Section
-                  _buildSection(
-                    title: 'Configuración',
-                    icon: Icons.settings,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDropdownField(
-                              label: 'Tipo',
-                              value: _selectedType,
-                              items: const [
-                                {'value': 'technical', 'label': 'Técnico'},
-                                {'value': 'soft_skills', 'label': 'Habilidades Blandas'},
-                                {'value': 'leadership', 'label': 'Liderazgo'},
-                                {'value': 'compliance', 'label': 'Cumplimiento'},
-                                {'value': 'safety', 'label': 'Seguridad'},
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedType = value!;
-                                });
-                              },
+      body: Consumer<TrainingProvider>(
+        builder: (context, provider, _) {
+          return LoadingStateWidget(
+            isLoading: provider.isLoading,
+            error: provider.error,
+            onRetry: () {
+              if (widget.isEditing) {
+                // Recargar datos del programa
+                _populateForm();
+              }
+            },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Basic Information Section
+                    _buildSection(
+                      title: 'Información Básica',
+                      icon: Icons.info_outline,
+                      children: [
+                        _buildTextFormField(
+                          controller: _nameController,
+                          label: 'Nombre del Programa',
+                          hint: 'Ingrese el nombre del programa',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'El nombre es obligatorio';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFormField(
+                          controller: _descriptionController,
+                          label: 'Descripción',
+                          hint: 'Descripción detallada del programa',
+                          maxLines: 3,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'La descripción es obligatoria';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFormField(
+                          controller: _objectivesController,
+                          label: 'Objetivos',
+                          hint: 'Objetivos del programa de formación',
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Configuration Section
+                    _buildSection(
+                      title: 'Configuración',
+                      icon: Icons.settings,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDropdownField(
+                                label: 'Tipo',
+                                value: _selectedType,
+                                items: const [
+                                  {'value': 'technical', 'label': 'Técnico'},
+                                  {'value': 'soft_skills', 'label': 'Habilidades Blandas'},
+                                  {'value': 'leadership', 'label': 'Liderazgo'},
+                                  {'value': 'compliance', 'label': 'Cumplimiento'},
+                                  {'value': 'safety', 'label': 'Seguridad'},
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedType = value!;
+                                  });
+                                },
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildDropdownField(
-                              label: 'Estado',
-                              value: _selectedStatus,
-                              items: const [
-                                {'value': 'draft', 'label': 'Borrador'},
-                                {'value': 'active', 'label': 'Activo'},
-                                {'value': 'archived', 'label': 'Archivado'},
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedStatus = value!;
-                                });
-                              },
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildDropdownField(
+                                label: 'Estado',
+                                value: _selectedStatus,
+                                items: const [
+                                  {'value': 'draft', 'label': 'Borrador'},
+                                  {'value': 'active', 'label': 'Activo'},
+                                  {'value': 'archived', 'label': 'Archivado'},
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedStatus = value!;
+                                  });
+                                },
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDropdownField(
-                              label: 'Departamento',
-                              value: _selectedDepartment,
-                              items: _departments.map((dept) => {
-                                'value': dept,
-                                'label': dept,
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedDepartment = value!;
-                                });
-                              },
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDropdownField(
+                                label: 'Departamento',
+                                value: _selectedDepartment,
+                                items: _departments.map((dept) => {
+                                  'value': dept,
+                                  'label': dept,
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedDepartment = value!;
+                                  });
+                                },
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildTextFormField(
-                              controller: _durationController,
-                              label: 'Duración (horas)',
-                              hint: '0',
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  final duration = double.tryParse(value);
-                                  if (duration == null || duration <= 0) {
-                                    return 'Ingrese una duración válida';
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildTextFormField(
+                                controller: _durationController,
+                                label: 'Duración (horas)',
+                                hint: '0',
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value != null && value.isNotEmpty) {
+                                    final duration = double.tryParse(value);
+                                    if (duration == null || duration <= 0) {
+                                      return 'Ingrese una duración válida';
+                                    }
                                   }
-                                }
-                                return null;
-                              },
+                                  return null;
+                                },
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Date Range Section
-                  _buildSection(
-                    title: 'Fechas',
-                    icon: Icons.calendar_today,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDateField(
-                              controller: _startDateController,
-                              label: 'Fecha de Inicio',
-                              hint: 'DD/MM/AAAA',
+                          ],
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Date Range Section
+                    _buildSection(
+                      title: 'Fechas',
+                      icon: Icons.calendar_today,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDateField(
+                                controller: _startDateController,
+                                label: 'Fecha de Inicio',
+                                hint: 'DD/MM/AAAA',
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildDateField(
-                              controller: _endDateController,
-                              label: 'Fecha de Fin',
-                              hint: 'DD/MM/AAAA',
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildDateField(
+                                controller: _endDateController,
+                                label: 'Fecha de Fin',
+                                hint: 'DD/MM/AAAA',
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: AppColors.primaryColor),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                          ],
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: BorderSide(color: AppColors.primaryColor),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            'Cancelar',
-                            style: TextStyle(
-                              color: AppColors.primaryColor,
-                              fontWeight: FontWeight.w600,
+                            child: Text(
+                              'Cancelar',
+                              style: TextStyle(
+                                color: AppColors.primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _saveProgram,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryColor,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _saveProgram,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            widget.isEditing ? 'Actualizar' : 'Crear Programa',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                            child: Text(
+                              widget.isEditing ? 'Actualizar' : 'Crear Programa',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          );
+        },
+      ),
     );
   }
 
@@ -518,69 +512,47 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     if (picked != null) {
       controller.text = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
     }
-  }  Future<void> _saveProgram() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+  }  
+  Future<void> _saveProgram() async {
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
+    final provider = Provider.of<TrainingProvider>(context, listen: false);
+    
     try {
-      // Create the program model with the correct properties
-      final program = TrainingProgramModel(
-        id: widget.isEditing ? widget.program!.id : 0, // Use 0 for new programs
-        name: _nameController.text,
-        description: _descriptionController.text,
-        objectives: _objectivesController.text,
-        trainingTypeId: 1, // Default value, you might want to add UI for this
-        trainingTypeName: 'Technical', // Default value
-        durationHours: double.tryParse(_durationController.text) ?? 0.0,
-        materials: '', // Default value
-        isActive: _selectedStatus == 'active',
-      );
+      final programData = {
+        if (widget.program?.id != null) 'id': widget.program!.id,
+        'name': _nameController.text,
+        'description': _descriptionController.text,
+        'training_type': _selectedType,
+        'duration_hours': double.parse(_durationController.text),
+        'objectives': _objectivesController.text,
+        'is_active': _selectedStatus == 'active',
+      };
 
-      // Get the provider with context
-      final trainingProvider = Provider.of<TrainingProvider>(context, listen: false);
-      
-      // For demonstration purposes, we're just fetching programs since the actual
-      // create/update methods don't exist in the provider
       if (widget.isEditing) {
-        // In a real app, you would call a method like:
-        // await trainingProvider.updateProgram(program);
-        await trainingProvider.fetchTrainingPrograms();
-        debugPrint('Would update program: ${program.name}');
+        await provider.updateProgram(programData);
       } else {
-        // In a real app, you would call a method like:
-        // await trainingProvider.createProgram(program);
-        await trainingProvider.fetchTrainingPrograms();
-        debugPrint('Would create program: ${program.name}');
+        await provider.createProgram(programData);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              widget.isEditing 
-                ? 'Programa actualizado exitosamente'
-                : 'Programa creado exitosamente',
+            content: Text(widget.isEditing 
+              ? 'Programa actualizado exitosamente'
+              : 'Programa creado exitosamente'
             ),
-            backgroundColor: AppColors.successColor,
+            backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(true);
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppColors.errorColor,
-          ),
+        context.showError(
+          'Error al ${widget.isEditing ? 'actualizar' : 'crear'} el programa: ${e.toString()}',
+          onRetry: _saveProgram,
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
       }
     }
   }
