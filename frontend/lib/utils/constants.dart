@@ -26,6 +26,13 @@ class ApiConstants {
   
   // Pagination
   static const int defaultPageSize = 20;
+
+  // Selection Module URLs
+  static const String selectionCandidatesUrl = '$baseUrl/api/selection/candidates/';
+  static const String selectionStagesUrl = '$baseUrl/api/selection/stages/';
+  static const String selectionPositionsUrl = '$baseUrl/api/selection/positions/';
+  static const String selectionCandidateStagesUrl = '$baseUrl/api/selection/candidate-stages/';
+  static const String selectionAnalyticsUrl = '$baseUrl/api/selection/analytics/';
 }
 
 class AppColors {
@@ -89,6 +96,14 @@ class RouteNames {
   // Authentication
   static const String login = '/login';
   static const String register = '/register';
+
+  // Selection Module Routes
+  static const String selectionCandidates = '/selection-candidates';
+  static const String selectionCandidateDetail = '/selection-candidate-detail';
+  static const String selectionCandidateForm = '/selection-candidate-form';
+  static const String selectionStages = '/selection-stages';
+  static const String selectionPositions = '/selection-positions';
+  static const String selectionAnalytics = '/selection-analytics';
   
   // Main routes
   static const String dashboard = '/dashboard';
@@ -145,5 +160,17 @@ class UserRoles {
     supervisor: AppStrings.supervisor,
     employee: AppStrings.employee,
     user: AppStrings.user,
+  };
+}
+
+// Selection Status Colors (using AppColors)
+class SelectionColors {
+  static const Map<String, Color> statusColors = {
+    'applied': AppColors.infoColor,
+    'in_progress': AppColors.warningColor,
+    'approved': AppColors.successColor,
+    'rejected': AppColors.errorColor,
+    'hired': AppColors.secondaryColor,
+    'withdrawn': AppColors.greyDark,
   };
 }

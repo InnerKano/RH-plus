@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rh_plus/providers/selection_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'routes/app_routes.dart';
 import 'providers/auth_provider.dart';
@@ -37,6 +38,15 @@ class MyApp extends StatelessWidget {
           create: (_) => TrainingProvider(token: ''),
           update: (_, auth, trainingProvider) {
             return TrainingProvider(token: auth.token ?? '');
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, SelectionProvider>(
+          create: (_) => SelectionProvider(),
+          update: (_, auth, selectionProvider) {
+            // No inicializar automáticamente aquí
+            final newProvider = SelectionProvider();
+            // La inicialización se hará manualmente cuando sea necesario
+            return newProvider;
           },
         ),
       ],

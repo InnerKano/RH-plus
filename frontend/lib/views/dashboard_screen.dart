@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
+import '../providers/selection_provider.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
+import 'selection/candidate_list_view.dart';
+import 'selection/stage_list_view.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -13,8 +16,10 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  int _selectionTabIndex = 0;
+  TabController? _selectionTabController;
 
   final List<ModuleInfo> _modules = [
     ModuleInfo('Dashboard', Icons.dashboard_outlined, 'dashboard'),
@@ -30,10 +35,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _selectionTabController = TabController(length: 2, vsync: this);
+    _selectionTabController!.addListener(() {
+      setState(() {
+        _selectionTabIndex = _selectionTabController!.index;
+      });
+    });
+    
     print('DashboardScreen: Initializing...');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
     });
+  }
+
+  @override
+  void dispose() {
+    _selectionTabController?.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeData() async {
@@ -48,8 +66,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await dashboardProvider.loadDashboardData();
       print('DashboardScreen: Dashboard data loaded');
       
-      // Build accessible modules list
       _buildAccessibleModules(authProvider.userPermissions);
+      // Initialize selection provider if user has access
+      if (mounted && authProvider.userPermissions?.canAccessModule('selection') == true) {
+        final selectionProvider = Provider.of<SelectionProvider>(context, listen: false);
+        selectionProvider.initializeService(authProvider.token!);
+      }
+      
+      // Build accessible modules list
     } catch (e) {
       print('DashboardScreen: Error during initialization: $e');
     }
@@ -91,6 +115,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: _buildAppBar(),
       drawer: _buildDrawer(),
       body: _buildBody(),
+      floatingActionButton: _buildSelectionFloatingButton(),
+    );
+  }
+
+  // BOTÓN PARA ACCEDER AL MÓDULO DE SELECCIÓN
+  Widget? _buildSelectionFloatingButton() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        // Solo mostrar el botón si el usuario tiene acceso al módulo de selección
+        // y está en el dashboard (no en el módulo de selección)
+        if (authProvider.userPermissions?.canAccessModule('selection') == true && _selectedIndex == 0) {
+          return FloatingActionButton.extended(
+            onPressed: () {
+              // Encontrar el índice del módulo de selección
+              final selectionIndex = _accessibleModules.indexWhere((module) => module.key == 'selection');
+              if (selectionIndex != -1) {
+                setState(() {
+                  _selectedIndex = selectionIndex;
+                });
+              }
+            },
+            backgroundColor: AppColors.primaryColor,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.person_search_outlined),
+            label: const Text('Selección'),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
@@ -98,10 +151,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return AppBar(
       title: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
-          // Safely get current module title
           String currentTitle = 'Dashboard';
           if (_selectedIndex < _accessibleModules.length && _selectedIndex >= 0) {
             currentTitle = _accessibleModules[_selectedIndex].title;
+            
+            // Add tab info for selection module
+            if (_accessibleModules[_selectedIndex].key == 'selection') {
+              final tabNames = ['Candidatos', 'Etapas'];
+              if (_selectionTabIndex < tabNames.length) {
+                currentTitle = '$currentTitle - ${tabNames[_selectionTabIndex]}';
+              }
+            }
           }
           
           return Text(
@@ -762,9 +822,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+
   Widget _buildModuleContent() {
     if (_selectedIndex >= _accessibleModules.length || _selectedIndex < 0) {
-      // Fallback to dashboard if index is invalid
       setState(() {
         _selectedIndex = 0;
       });
@@ -773,12 +833,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final currentModule = _accessibleModules[_selectedIndex];
     
+    // Handle selection module specifically
+    if (currentModule.key == 'selection') {
+      return _buildSelectionModule();
+    }
+    
     // Handle training module navigation
     if (currentModule.key == 'training') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushNamed(context, RouteNames.training);
         setState(() {
-          _selectedIndex = 0; // Return to dashboard
+          _selectedIndex = 0;
         });
       });
       return _buildDashboardContent();
@@ -811,11 +876,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              print('DashboardScreen: Returning to dashboard from ${currentModule.key}');
               setState(() {
-                _selectedIndex = 0; // Return to dashboard
+                _selectedIndex = 0;
               });
-              // Don't close drawer here, let user navigate manually if needed
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryColor,
@@ -825,6 +888,88 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSelectionModule() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final permissions = authProvider.userPermissions;
+        
+        if (permissions == null || !permissions.canAccessModule('selection')) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 64,
+                  color: AppColors.greyDark,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Sin permisos de acceso',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.greyDark,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No tienes permisos para acceder al módulo de selección',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.greyDark,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Inicializar SelectionProvider solo cuando se muestre el módulo
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            final selectionProvider = Provider.of<SelectionProvider>(context, listen: false);
+            if (authProvider.token != null) {
+              selectionProvider.initializeService(authProvider.token!);
+            }
+          }
+        });
+
+        return Column(
+          children: [
+            Container(
+              color: AppColors.backgroundColor,
+              child: TabBar(
+                controller: _selectionTabController,
+                labelColor: AppColors.primaryColor,
+                unselectedLabelColor: AppColors.greyDark,
+                indicatorColor: AppColors.primaryColor,
+                tabs: const [
+                  Tab(
+                    icon: Icon(Icons.people_outline),
+                    text: 'Candidatos',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.linear_scale_outlined),
+                    text: 'Etapas',
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _selectionTabController,
+                children: const [
+                  CandidateListView(),
+                  StageListView(),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
