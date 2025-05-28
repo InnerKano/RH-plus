@@ -4,10 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_management_provider.dart';
 import 'providers/dashboard_provider.dart';
+import 'providers/training_provider.dart';
 import 'views/login_screen.dart';
 import 'views/register_screen.dart';
 import 'views/dashboard_screen.dart';
 import 'views/user_management_screen.dart';
+import 'views/training/training_main_screen.dart';
 import 'utils/constants.dart';
 
 void main() {
@@ -19,8 +21,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
+    return MultiProvider(      providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => UserManagementProvider()),
         ChangeNotifierProxyProvider<AuthProvider, DashboardProvider>(
@@ -28,6 +29,12 @@ class MyApp extends StatelessWidget {
           update: (_, auth, dashboardProvider) {
             dashboardProvider?.setToken(auth.token);
             return dashboardProvider ?? DashboardProvider();
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, TrainingProvider>(
+          create: (_) => TrainingProvider(token: ''),
+          update: (_, auth, trainingProvider) {
+            return TrainingProvider(token: auth.token ?? '');
           },
         ),
       ],
@@ -39,12 +46,12 @@ class MyApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
           colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryColor),
         ),
-        home: const AuthWrapper(),
-        routes: {
+        home: const AuthWrapper(),        routes: {
           RouteNames.login: (context) => const LoginScreen(),
           RouteNames.register: (context) => const RegisterScreen(),
           RouteNames.dashboard: (context) => const DashboardScreen(),
           RouteNames.userManagement: (context) => const UserManagementScreen(),
+          RouteNames.training: (context) => const TrainingMainScreen(),
         },
       ),
     );

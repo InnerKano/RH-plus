@@ -38,9 +38,10 @@ class AppColors {
   static const Color successColor = Color(0xFF27AE60);
   static const Color warningColor = Color(0xFFF39C12);
   static const Color infoColor = Color(0xFF3498DB);
-  
-  // Text colors
+    // Text colors
   static const Color textColor = Color(0xFF2C3E50); // Added textColor
+  static const Color textPrimaryColor = Color(0xFF2C3E50); // Added for compatibility
+  static const Color textSecondaryColor = Color(0xFF95A5A6); // Added for compatibility
   static const Color onPrimaryColor = Colors.white;
   static const Color onSecondaryColor = Colors.white;
   static const Color onBackgroundColor = Color(0xFF2C3E50);
@@ -49,6 +50,7 @@ class AppColors {
   
   // Additional neutral colors
   static const Color greyLight = Color(0xFFECF0F1);
+  static const Color borderColor = Color(0xFFE1E8ED); // Added for form borders
   static const Color greyMedium = Color(0xFFBDC3C7);
   static const Color greyDark = Color(0xFF95A5A6);
 }
@@ -112,12 +114,15 @@ class RouteNames {
   static const String performance = '/performance';
   static const String evaluations = '/evaluations';
   static const String evaluationDetail = '/evaluation-detail';
-  
-  // Training module
+    // Training module
   static const String training = '/training';
   static const String trainingProgramDetail = '/training-program-detail';
   static const String trainingSessionDetail = '/training-session-detail';
   static const String trainingAttendance = '/training-attendance';
+  static const String trainingProgramForm = '/training-program-form';
+  static const String trainingSessionForm = '/training-session-form';
+  static const String trainingAttendanceManagement = '/training-attendance-management';
+  static const String trainingReports = '/training-reports';
   
   // Role Management
   static const String userManagement = '/user-management';
