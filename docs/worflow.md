@@ -2,6 +2,15 @@
 
 Basado en el análisis de todos los módulos del sistema RH-Plus, puedo explicarte el workflow que debería seguir un usuario administrador o cualquier usuario que gestione el sistema. El sistema está diseñado como una plataforma integral de Recursos Humanos con varios módulos interconectados.
 
+## Usuarios y Roles del Sistema
+
+RH Plus es un sistema de gestión de recursos humanos diseñado principalmente para el personal de RRHH, pero con diferentes roles y niveles de acceso:
+0. Superuser(dev o dios)
+1. **Administradores del sistema**: Tienen acceso completo a todas las funcionalidades.
+2. **Personal de RRHH**: Usuarios principales que gestionan los procesos de selección, contratación, nómina, etc.
+3. **Supervisores/Gerentes**: Pueden ver información de sus equipos, realizar evaluaciones de desempeño.
+4. **Empleados**: Acceso limitado a sus propios datos, evaluaciones y capacitaciones.
+
 ## Flujo General del Sistema
 
 ### 1. Autenticación y Acceso

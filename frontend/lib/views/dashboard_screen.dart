@@ -762,7 +762,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
   Widget _buildModuleContent() {
     if (_selectedIndex >= _accessibleModules.length || _selectedIndex < 0) {
       // Fallback to dashboard if index is invalid
@@ -773,6 +772,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     final currentModule = _accessibleModules[_selectedIndex];
+    
+    // Handle training module navigation
+    if (currentModule.key == 'training') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushNamed(context, RouteNames.training);
+        setState(() {
+          _selectedIndex = 0; // Return to dashboard
+        });
+      });
+      return _buildDashboardContent();
+    }
     
     return Center(
       child: Column(
