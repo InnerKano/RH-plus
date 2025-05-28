@@ -7,6 +7,15 @@ from django.conf import settings
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 # Schema view para Swagger/OpenAPI
 schema_view = get_schema_view(
@@ -29,6 +38,10 @@ urlpatterns = [
     path('api/schema/', schema_view.with_ui('swagger', cache_timeout=0)),  # URL alternativa
     path('api/docs/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     
+    # JWT Authentication
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
     # Include app urls
     path('api/core/', include('apps.core.urls')),
     path('api/selection/', include('apps.selection.urls')),
@@ -36,4 +49,9 @@ urlpatterns = [
     path('api/payroll/', include('apps.payroll.urls')),
     path('api/performance/', include('apps.performance.urls')),
     path('api/training/', include('apps.training.urls')),
+    
+    # API Documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]

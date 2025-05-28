@@ -8,3 +8,4 @@ Pillow>=10.2.0
 python-dotenv==1.0.1
 drf-yasg==1.21.7
 setuptools>=67.8.0
+drf-spectacular>=0.26.2,<0.27.0
