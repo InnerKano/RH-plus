@@ -22,13 +22,28 @@ class TrainingProgramModel {
   });
 
   factory TrainingProgramModel.fromJson(Map<String, dynamic> json) {
+    // Handle duration_hours safely:
+    // 1. Convert String to double if it's a String
+    // 2. Convert int to double if it's an int
+    // 3. Use as is if it's already a double
+    // 4. Default to 0.0 if null or invalid
+    double parseDuration(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) {
+        return double.tryParse(value) ?? 0.0;
+      }
+      return 0.0;
+    }
+
     return TrainingProgramModel(
       id: json['id'],
       name: json['name'],
       description: json['description'],
       trainingTypeId: json['training_type'],
       trainingTypeName: json['training_type_name'] ?? '',
-      durationHours: json['duration_hours']?.toDouble() ?? 0.0,
+      durationHours: parseDuration(json['duration_hours']),
       materials: json['materials'],
       objectives: json['objectives'],
       isActive: json['is_active'] ?? true,

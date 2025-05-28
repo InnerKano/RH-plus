@@ -8,6 +8,7 @@ class TrainingService {
   
   TrainingService({required this.token});
   
+  // Training Programs
   Future<List<TrainingProgramModel>> getTrainingPrograms() async {
     try {
       final response = await http.get(
@@ -28,7 +29,67 @@ class TrainingService {
       throw Exception('Error: $e');
     }
   }
+
+  Future<Map<String, dynamic>> createProgram(Map<String, dynamic> programData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/api/training/programs/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(programData),
+      );
+      
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to create training program');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
   
+  Future<Map<String, dynamic>> updateProgram(int programId, Map<String, dynamic> programData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/api/training/programs/$programId/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(programData),
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to update training program');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+  
+  Future<void> deleteProgram(int programId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/api/training/programs/$programId/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (response.statusCode != 204) {
+        throw Exception('Failed to delete training program');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  // Training Sessions
   Future<List<TrainingSessionModel>> getUpcomingSessions() async {
     try {
       final response = await http.get(
@@ -70,7 +131,8 @@ class TrainingService {
       throw Exception('Error: $e');
     }
   }
-  
+
+  // Attendance Management
   Future<List<TrainingAttendanceModel>> getAttendanceBySession(int sessionId) async {
     try {
       final response = await http.get(
@@ -127,6 +189,26 @@ class TrainingService {
         return jsonDecode(response.body);
       } else {
         throw Exception('Failed to load attendance statistics');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> markSessionComplete(int sessionId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/api/training/sessions/$sessionId/complete/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to mark session as complete');
       }
     } catch (e) {
       throw Exception('Error: $e');

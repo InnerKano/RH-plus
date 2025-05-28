@@ -1879,3 +1879,299 @@ python manage.py shell
 ---
 
 Este commit establece las bases sólidas para un sistema de gestión de recursos humanos escalable con control granular de permisos y una interfaz moderna y profesional.
+
+
+# Corrección de Errores en el Módulo de Capacitación
+
+## 🔍 Problema
+Se identificaron múltiples errores en el módulo de capacitación relacionados con:
+1. Inicialización incorrecta del TrainingProvider
+2. Discrepancia entre los nombres de propiedades del modelo y su uso
+3. Colores faltantes en AppColors
+4. Métodos no definidos en el TrainingProvider
+5. Tipos de datos incompatibles en casting
+
+## 💡 Solución
+### 1. Corrección del TrainingProvider
+- Actualizado el constructor para obtener el token del context
+- Implementación correcta de los métodos faltantes:
+  - loadTrainingPrograms()
+  - loadTrainingSessions()
+  - loadAttendanceForSession()
+
+### 2. Actualización de Modelos
+Alineación de propiedades en los modelos:
+- TrainingProgramModel:
+  - Añadido: status, duration, startDate, endDate, type, department
+- TrainingSessionModel:
+  - Añadido: title, description, startDate, attendees
+
+### 3. Constantes de Color
+Añadidas constantes faltantes en AppColors:
+- textPrimaryColor
+- textSecondaryColor
+- borderColor
+
+### 4. Corrección de Tipos
+- Corregido el casting de Object a String en session_form_screen.dart
+- Ajustado el tipo de retorno en el cálculo de totalParticipants
+
+## 📁 Archivos Modificados
+1. lib/views/training/reports/training_reports_screen.dart
+   - Corregida inicialización del provider
+   - Actualizados métodos de carga
+   - Corregidos getters de modelos
+
+2. lib/views/training/forms/program_form_screen.dart
+   - Actualizada inicialización del provider
+   - Corregidos nombres de propiedades del modelo
+   - Actualizadas referencias de color
+
+3. lib/views/training/forms/session_form_screen.dart
+   - Corregido manejo de tipos en controladores
+   - Actualizadas propiedades del modelo
+   - Corregidas referencias de color
+
+4. lib/views/training/management/attendance_management_screen.dart
+   - Implementada carga de asistencia
+   - Corregidas referencias de color
+
+5. lib/models/training_models.dart
+   - Añadidas propiedades faltantes
+   - Actualizada estructura de modelos
+
+6. lib/providers/training_provider.dart
+   - Implementados métodos faltantes
+   - Mejorado manejo de token
+
+7. lib/utils/constants/colors.dart
+   - Añadidas constantes de color faltantes
+
+## 🔧 Detalles Técnicos
+### TrainingProvider
+```dart
+class TrainingProvider extends ChangeNotifier {
+  final String token;
+  
+  TrainingProvider({required this.token});
+  
+  Future<void> loadTrainingPrograms() async {
+    // Implementación
+  }
+  
+  Future<void> loadTrainingSessions() async {
+    // Implementación
+  }
+  
+  Future<void> loadAttendanceForSession(String sessionId) async {
+    // Implementación
+  }
+}
+```
+
+### Modelos Actualizados
+```dart
+class TrainingProgramModel {
+  final String status;
+  final double duration;
+  final String startDate;
+  final String endDate;
+  final String type;
+  final String department;
+  
+  // Constructor
+}
+
+class TrainingSessionModel {
+  final String title;
+  final String description;
+  final String startDate;
+  final List<String> attendees;
+  
+  // Constructor
+}
+```
+
+## ✅ Beneficios
+1. Mayor estabilidad en el módulo de capacitación
+2. Consistencia en el manejo de datos
+3. UI coherente con el diseño del sistema
+4. Mejor manejo de estados y datos
+5. Código más mantenible
+
+## 🧪 Testing
+- Verificada la carga de programas y sesiones
+- Probado el manejo de asistencia
+- Validada la generación de reportes
+- Comprobada la consistencia de la UI
+
+## 📌 Notas
+- Se mantiene la estructura existente del proyecto
+- Se respeta la arquitectura de providers
+- Se mantiene la coherencia con el diseño existente
+
+Historial resumido de conversaciones. Basándome en el código y el contexto proporcionados, crearé una documentación detallada de los cambios en el formato de confirmación:
+
+Corrección: Mejoras del módulo de entrenamiento en el frontend/backend
+
+CAMBIOS IMPORTANTES:
+- Se modificó la inicialización de TrainingProvider para que requiera token
+- Se actualizaron los modelos de entrenamiento para alinear las propiedades
+- Se añadieron nuevas rutas y mejoras de navegación
+
+🔧 Cambios técnicos:
+
+Backend:
+- views.py (training):
+- TrainingSessionViewSet optimizado para la gestión de próximas sesiones
+- Se añadieron paginación y filtros en los listados
+- Se mejoró la gestión de errores en las operaciones CRUD
+- Se implementó la nueva funcionalidad attendance_stats
+
+Frontend:
+1. Proveedores:
+- training_provider.dart:
+- El constructor ahora requiere token para la autenticación
+- Se renombraron los métodos para mayor consistencia (fetch* en lugar de load*)
+- Implementación de métodos de estadísticas y filtros
+
+2. Modelos:
+- training_models.dart:
+- TrainingProgramModel: Nuevos campos: duración, tipo y estado
+- TrainingSessionModel: Campos actualizados programName, sessionDate
+- TrainingAttendanceModel: Nuevo modelo para la gestión de asistencia
+
+3. Vistas:
+- Múltiples archivos en lib/views/training/:
+- Inicialización del proveedor corregida
+- Gestión correcta de tokens implementada
+- Mejoras en la navegación y la gestión de estados
+
+4. Widgets:
+- Nueva estructura de carpetas para una mejor organización
+- Componentes reutilizables para sesiones y programas
+- Implementación de tarjetas de estadísticas y filtros
+
+🎯 Objetivo:
+1. Mejorar la seguridad con una gestión correcta de tokens
+2. Optimizar el rendimiento de las consultas y la carga de datos
+3. Unificar la estructura del modelo frontend/backend
+4. Facilitar el mantenimiento con una mejor organización del código
+
+💡 Motivación:
+- Errores de compilación debido a inconsistencias del modelo
+- Problemas de seguridad en la autenticación
+- Dificultades en el mantenimiento del código debido a la desorganización
+- Necesidad de una mejor experiencia de usuario en la navegación
+
+📝 Pruebas:
+- Permisos y roles verificados en rutas protegidas
+- Paginación y filtros probados en listados
+- Navegación por pantalla validada
+- Token confirmado Persistencia entre sesiones
+
+
+Basado en nuestra conversación y los cambios realizados, aquí está la documentación completa del commit:
+
+```
+feat(training): Conectar módulo de capacitación frontend con backend
+
+Se implementó la conexión completa del módulo de capacitación entre frontend y 
+backend, corrigiendo problemas de formato de datos y manejo de tipos.
+
+CAMBIOS PRINCIPALES:
+
+1. Corrección del modelo TrainingProgramModel:
+- Se mejoró el manejo de duration_hours para evitar errores de conversión null
+- Se agregó manejo seguro de parseo de string a double
+- Se implementó lógica de fallback para valores inválidos
+
+2. Corrección en program_form_screen.dart:
+- Se actualizó el dropdown de tipos para usar IDs numéricos
+- Se modificó _saveProgram() para enviar datos en formato correcto
+- Se inicializó _selectedType con ID válido ('1')
+- Se actualizó _populateForm() para manejar type IDs
+
+3. Formato de datos alineado con el backend:
+Backend espera:
+{
+    "name": string,
+    "description": string,
+    "training_type": number,
+    "duration_hours": string/number,
+    "objectives": string,
+    "is_active": boolean
+}
+
+ARCHIVOS MODIFICADOS:
+
+frontend/lib/models/training_models.dart:
+- Actualizado TrainingProgramModel.fromJson()
+- Agregada función parseDuration() para manejo seguro
+- Mejorado manejo de tipos nullables
+
+frontend/lib/views/training/forms/program_form_screen.dart:
+- Modificado _saveProgram()
+- Actualizado dropdown de tipos
+- Corregida inicialización de variables
+- Mejorado manejo de edición
+
+RAZÓN DE LOS CAMBIOS:
+
+1. Error al crear programas:
+- El backend esperaba training_type como número pero recibía string
+- Los valores de duration_hours causaban errores de conversión
+- Faltaba manejo de tipos nullables en el modelo
+
+2. Problemas de display:
+- Los programas no se mostraban por errores de conversión
+- El dropdown de tipos no funcionaba por formato incorrecto
+- Las sesiones no cargaban por errores en cascada
+
+MEJORAS IMPLEMENTADAS:
+
+1. Manejo de Datos:
+- Conversión segura de tipos
+- Validación de datos antes de envío
+- Manejo consistente de IDs numéricos
+
+2. UX:
+- Dropdowns funcionando correctamente
+- Visualización correcta de programas existentes
+- Creación exitosa de nuevos programas
+
+3. Estabilidad:
+- Manejo de errores mejorado
+- Prevención de crashes por datos nulos
+- Formato de datos consistente
+
+NOTAS TÉCNICAS:
+
+1. Formato de duration_hours:
+- Backend acepta tanto string como número
+- Frontend convierte todo a double internamente
+- Se mantiene precisión decimal
+
+2. IDs de Tipos:
+- Se usan IDs numéricos internamente
+- UI muestra nombres amigables
+- Conversión automática en forms
+
+3. Validaciones:
+- Agregadas validaciones de formato
+- Verificación de campos requeridos
+- Conversión segura de tipos
+
+TESTING REALIZADO:
+
+1. Creación de programas ✓
+2. Listado de programas ✓
+3. Edición de programas ✓
+4. Creación de sesiones ✓
+5. Listado de sesiones ✓
+
+La conexión ahora funciona correctamente y mantiene la integridad de datos
+entre frontend y backend.
+```
+
+Este commit documenta todos los cambios necesarios que se realizaron para hacer funcionar correctamente la conexión entre el frontend y backend del módulo de capacitación, incluyendo las correcciones de errores y mejoras implementadas.
