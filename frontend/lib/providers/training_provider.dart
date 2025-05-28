@@ -44,8 +44,14 @@ class TrainingProvider with ChangeNotifier {
   Future<void> refresh() async {
     _error = null;
     await fetchTrainingPrograms();
+    if (_selectedProgram != null) {
+      await fetchSessionsByProgram(_selectedProgram!.id);
+    } else {
+      await fetchUpcomingSessions();
+    }
   }
   
+  // Training Programs
   Future<void> fetchTrainingPrograms() async {
     if (_isLoading) return;
     
@@ -62,85 +68,131 @@ class TrainingProvider with ChangeNotifier {
     }
   }
 
-  // Training sessions
+  Future<void> createProgram(Map<String, dynamic> programData) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _trainingService.createProgram(programData);
+      _programs.add(TrainingProgramModel.fromJson(response));
+      _setLoading(false);
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  Future<void> updateProgram(Map<String, dynamic> programData) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _trainingService.updateProgram(
+        programData['id'],
+        programData,
+      );
+      
+      final index = _programs.indexWhere((p) => p.id == programData['id']);
+      if (index != -1) {
+        _programs[index] = TrainingProgramModel.fromJson(response);
+      }
+      
+      _setLoading(false);
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  Future<void> deleteProgram(int programId) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      await _trainingService.deleteProgram(programId);
+      _programs.removeWhere((p) => p.id == programId);
+      _setLoading(false);
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  // Training Sessions
   Future<void> fetchUpcomingSessions() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    _setLoading(true);
+    _setError(null);
 
     try {
       _sessions = await _trainingService.getUpcomingSessions();
-      _isLoading = false;
+      _setLoading(false);
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
+      _setError(e.toString());
+      _setLoading(false);
     }
   }
 
   Future<void> fetchSessionsByProgram(int programId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    _setLoading(true);
+    _setError(null);
 
     try {
       _sessions = await _trainingService.getSessionsByProgram(programId);
-      _isLoading = false;
+      _setLoading(false);
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
+      _setError(e.toString());
+      _setLoading(false);
     }
   }
 
-  // Attendance
+  // Attendance Management
   Future<void> fetchAttendanceBySession(int sessionId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    _setLoading(true);
+    _setError(null);
 
     try {
       _attendances = await _trainingService.getAttendanceBySession(sessionId);
-      _isLoading = false;
+      _setLoading(false);
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
+      _setError(e.toString());
+      _setLoading(false);
     }
   }
 
   Future<void> fetchAttendanceByEmployee(int employeeId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    _setLoading(true);
+    _setError(null);
 
     try {
       _attendances = await _trainingService.getAttendanceByEmployee(employeeId);
-      _isLoading = false;
+      _setLoading(false);
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
+      _setError(e.toString());
+      _setLoading(false);
     }
   }
 
   Future<void> fetchAttendanceStats(int sessionId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    _setLoading(true);
+    _setError(null);
 
     try {
       _attendanceStats = await _trainingService.getAttendanceStats(sessionId);
-      _isLoading = false;
+      _setLoading(false);
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
+      _setError(e.toString());
+      _setLoading(false);
     }
   }
 
@@ -168,68 +220,5 @@ class TrainingProvider with ChangeNotifier {
   void clearAttendanceStats() {
     _attendanceStats = null;
     notifyListeners();
-  }
-
-  // Program CRUD operations
-  Future<void> createProgram(Map<String, dynamic> programData) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final response = await _trainingService.createProgram(programData);
-      _programs.add(TrainingProgramModel.fromJson(response));
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
-      throw e; // Re-throw para manejo en la UI
-    }
-  }
-
-  Future<void> updateProgram(Map<String, dynamic> programData) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final response = await _trainingService.updateProgram(
-        programData['id'],
-        programData,
-      );
-      
-      final index = _programs.indexWhere((p) => p.id == programData['id']);
-      if (index != -1) {
-        _programs[index] = TrainingProgramModel.fromJson(response);
-      }
-      
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
-      throw e;
-    }
-  }
-
-  Future<void> deleteProgram(int programId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      await _trainingService.deleteProgram(programId);
-      _programs.removeWhere((p) => p.id == programId);
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
-      throw e;
-    }
   }
 }

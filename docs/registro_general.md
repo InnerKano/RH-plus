@@ -2070,3 +2070,108 @@ Frontend:
 - Navegación por pantalla validada
 - Token confirmado Persistencia entre sesiones
 
+
+Basado en nuestra conversación y los cambios realizados, aquí está la documentación completa del commit:
+
+```
+feat(training): Conectar módulo de capacitación frontend con backend
+
+Se implementó la conexión completa del módulo de capacitación entre frontend y 
+backend, corrigiendo problemas de formato de datos y manejo de tipos.
+
+CAMBIOS PRINCIPALES:
+
+1. Corrección del modelo TrainingProgramModel:
+- Se mejoró el manejo de duration_hours para evitar errores de conversión null
+- Se agregó manejo seguro de parseo de string a double
+- Se implementó lógica de fallback para valores inválidos
+
+2. Corrección en program_form_screen.dart:
+- Se actualizó el dropdown de tipos para usar IDs numéricos
+- Se modificó _saveProgram() para enviar datos en formato correcto
+- Se inicializó _selectedType con ID válido ('1')
+- Se actualizó _populateForm() para manejar type IDs
+
+3. Formato de datos alineado con el backend:
+Backend espera:
+{
+    "name": string,
+    "description": string,
+    "training_type": number,
+    "duration_hours": string/number,
+    "objectives": string,
+    "is_active": boolean
+}
+
+ARCHIVOS MODIFICADOS:
+
+frontend/lib/models/training_models.dart:
+- Actualizado TrainingProgramModel.fromJson()
+- Agregada función parseDuration() para manejo seguro
+- Mejorado manejo de tipos nullables
+
+frontend/lib/views/training/forms/program_form_screen.dart:
+- Modificado _saveProgram()
+- Actualizado dropdown de tipos
+- Corregida inicialización de variables
+- Mejorado manejo de edición
+
+RAZÓN DE LOS CAMBIOS:
+
+1. Error al crear programas:
+- El backend esperaba training_type como número pero recibía string
+- Los valores de duration_hours causaban errores de conversión
+- Faltaba manejo de tipos nullables en el modelo
+
+2. Problemas de display:
+- Los programas no se mostraban por errores de conversión
+- El dropdown de tipos no funcionaba por formato incorrecto
+- Las sesiones no cargaban por errores en cascada
+
+MEJORAS IMPLEMENTADAS:
+
+1. Manejo de Datos:
+- Conversión segura de tipos
+- Validación de datos antes de envío
+- Manejo consistente de IDs numéricos
+
+2. UX:
+- Dropdowns funcionando correctamente
+- Visualización correcta de programas existentes
+- Creación exitosa de nuevos programas
+
+3. Estabilidad:
+- Manejo de errores mejorado
+- Prevención de crashes por datos nulos
+- Formato de datos consistente
+
+NOTAS TÉCNICAS:
+
+1. Formato de duration_hours:
+- Backend acepta tanto string como número
+- Frontend convierte todo a double internamente
+- Se mantiene precisión decimal
+
+2. IDs de Tipos:
+- Se usan IDs numéricos internamente
+- UI muestra nombres amigables
+- Conversión automática en forms
+
+3. Validaciones:
+- Agregadas validaciones de formato
+- Verificación de campos requeridos
+- Conversión segura de tipos
+
+TESTING REALIZADO:
+
+1. Creación de programas ✓
+2. Listado de programas ✓
+3. Edición de programas ✓
+4. Creación de sesiones ✓
+5. Listado de sesiones ✓
+
+La conexión ahora funciona correctamente y mantiene la integridad de datos
+entre frontend y backend.
+```
+
+Este commit documenta todos los cambios necesarios que se realizaron para hacer funcionar correctamente la conexión entre el frontend y backend del módulo de capacitación, incluyendo las correcciones de errores y mejoras implementadas.

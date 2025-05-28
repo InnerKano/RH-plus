@@ -13,6 +13,7 @@ from .repositories import (
     TrainingProgramRepository, TrainingSessionRepository, TrainingAttendanceRepository
 )
 from apps.core.utils import record_activity
+from .logging import logger
 
 class TrainingTypeViewSet(viewsets.ModelViewSet):
     """ViewSet for TrainingType model."""
@@ -20,18 +21,32 @@ class TrainingTypeViewSet(viewsets.ModelViewSet):
     serializer_class = TrainingTypeSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def perform_create(self, serializer):
+        logger.info(
+            f"Creating new training type by user {self.request.user.email}"
+        )
+        try:
+            training_type = serializer.save()
+            logger.info(f"Training type created successfully: {training_type.name}")
+        except Exception as e:
+            logger.error(f"Error creating training type: {str(e)}")
+            raise
+
 class TrainingProgramViewSet(viewsets.ModelViewSet):
     """ViewSet for TrainingProgram model."""
     serializer_class = TrainingProgramSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
+        logger.info(f"Fetching training programs for user {self.request.user.email}")
         return TrainingProgramRepository.get_active_programs()
     
     def perform_create(self, serializer):
+        logger.info(f"Creating new training program by user {self.request.user.email}")
         try:
             with transaction.atomic():
                 program = serializer.save(created_by=self.request.user)
+                logger.info(f"Training program created successfully: {program.name}")
                 record_activity(
                     title="Nuevo programa de capacitación creado",
                     description=f"Se ha creado el programa '{program.name}'",
@@ -39,11 +54,15 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
                     user=self.request.user
                 )
         except ValidationError as e:
+            logger.error(f"Validation error creating training program: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-    
+        except Exception as e:
+            logger.error(f"Error creating training program: {str(e)}")
+            raise
+
     def perform_update(self, serializer):
         try:
             with transaction.atomic():
@@ -96,39 +115,63 @@ class TrainingSessionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
+        logger.info(f"Fetching training sessions for user {self.request.user.email}")
         return TrainingSession.objects.all()
     
     def perform_create(self, serializer):
-        session = serializer.save(created_by=self.request.user)
-        
-        # Record activity
-        record_activity(
-            title="Nueva sesión de capacitación programada",
-            description=f"Se ha programado la capacitación '{session.program.name}' para el {session.date.strftime('%d/%m/%Y')}",
-            activity_type="training",
-            user=self.request.user
-        )
-    
+        logger.info(f"Creating new training session by user {self.request.user.email}")
+        try:
+            session = serializer.save(created_by=self.request.user)
+            logger.info(
+                f"Training session created successfully: {session.program.name} on {session.session_date}"
+            )
+            record_activity(
+                title="Nueva sesión de capacitación programada",
+                description=f"Se ha programado '{session.program.name}' para el {session.session_date}",
+                activity_type="training",
+                user=self.request.user
+            )
+        except Exception as e:
+            logger.error(f"Error creating training session: {str(e)}")
+            raise
+
     @action(detail=False, methods=['get'])
     def upcoming(self, request):
         """Return upcoming training sessions."""
-        sessions = TrainingSessionRepository.get_upcoming_sessions()
-        
-        serializer = self.get_serializer(sessions, many=True)
-        return Response(serializer.data)
-    
+        logger.info(f"Fetching upcoming sessions for user {request.user.email}")
+        try:
+            sessions = TrainingSessionRepository.get_upcoming_sessions()
+            serializer = self.get_serializer(sessions, many=True)
+            logger.info(f"Found {len(sessions)} upcoming sessions")
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error fetching upcoming sessions: {str(e)}")
+            return Response(
+                {"error": "Error fetching upcoming sessions"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     @action(detail=False, methods=['get'])
     def by_program(self, request):
         """Return sessions by program."""
         program_id = request.query_params.get('program')
+        logger.info(f"Fetching sessions for program {program_id}")
         
         if not program_id:
+            logger.warning("Program ID not provided in request")
             return Response({"error": "Program ID is required"}, status=400)
         
-        sessions = TrainingSessionRepository.get_by_program(program_id)
-        
-        serializer = self.get_serializer(sessions, many=True)
-        return Response(serializer.data)
+        try:
+            sessions = TrainingSessionRepository.get_by_program(program_id)
+            serializer = self.get_serializer(sessions, many=True)
+            logger.info(f"Found {len(sessions)} sessions for program {program_id}")
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error fetching sessions for program {program_id}: {str(e)}")
+            return Response(
+                {"error": "Error fetching program sessions"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):

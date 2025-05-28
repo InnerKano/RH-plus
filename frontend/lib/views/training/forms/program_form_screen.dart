@@ -29,8 +29,8 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
   
-  String _selectedStatus = 'draft';
-  String _selectedType = 'technical';
+  String _selectedStatus = 'active';
+  String _selectedType = '1'; // Initialize with first type ID
   String _selectedDepartment = '';
   List<String> _departments = [];
   bool _isLoading = false;
@@ -78,12 +78,11 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     _descriptionController.text = program.description;
     _objectivesController.text = program.objectives;
     _durationController.text = program.durationHours.toString();
-    
     // These fields are not in the model, so using default values
     _startDateController.text = '';
     _endDateController.text = '';
     _selectedStatus = program.isActive ? 'active' : 'draft';
-    _selectedType = 'technical'; // Default value
+    _selectedType = program.trainingTypeId.toString(); // Convert type ID to string
     _selectedDepartment = _departments.first; // Default value
   }
 
@@ -173,11 +172,11 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                                 label: 'Tipo',
                                 value: _selectedType,
                                 items: const [
-                                  {'value': 'technical', 'label': 'Técnico'},
-                                  {'value': 'soft_skills', 'label': 'Habilidades Blandas'},
-                                  {'value': 'leadership', 'label': 'Liderazgo'},
-                                  {'value': 'compliance', 'label': 'Cumplimiento'},
-                                  {'value': 'safety', 'label': 'Seguridad'},
+                                  {'value': '1', 'label': 'Técnico'},
+                                  {'value': '2', 'label': 'Habilidades Blandas'},
+                                  {'value': '3', 'label': 'Liderazgo'},
+                                  {'value': '4', 'label': 'Cumplimiento'},
+                                  {'value': '5', 'label': 'Seguridad'},
                                 ],
                                 onChanged: (value) {
                                   setState(() {
@@ -523,7 +522,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
         if (widget.program?.id != null) 'id': widget.program!.id,
         'name': _nameController.text,
         'description': _descriptionController.text,
-        'training_type': _selectedType,
+        'training_type': int.parse(_selectedType),
         'duration_hours': double.parse(_durationController.text),
         'objectives': _objectivesController.text,
         'is_active': _selectedStatus == 'active',
