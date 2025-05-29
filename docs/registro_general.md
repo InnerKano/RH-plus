@@ -2397,3 +2397,102 @@ Tests: Pruebas unitarias y de integración
 Documentación: Guías de usuario y técnicas
 El módulo de selección está ahora completamente operativo con una base sólida para funcionalidades avanzadas y un flujo de datos estable entre frontend y backend.
 
+Basado en nuestra conversación, aquí está la documentación de los cambios implementados:
+
+```markdown
+# Cambios Implementados en el Módulo de Afiliaciones
+
+## Resumen
+Se realizó una refactorización del módulo de afiliaciones para mejorar la coherencia entre el backend y frontend, y corregir la lógica de manejo de empleados y usuarios. El cambio principal fue migrar de usar la tabla `Employee` del módulo de afiliaciones a utilizar directamente los usuarios con rol "EMPLOYEE" del sistema core.
+
+## Cambios en el Backend
+
+### Modelos (backend/apps/affiliation/models.py)
+- Actualizado el modelo `Affiliation` para usar `User` en lugar de `Employee`
+- Modificada la relación ForeignKey para apuntar a `User` del módulo core
+```python
+employee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='affiliations')
+```
+
+### Serializers (backend/apps/affiliation/serializers.py)
+- Actualizado `AffiliationSerializer` para manejar usuarios en lugar de empleados
+- Agregado método personalizado para mostrar el nombre del empleado:
+```python
+def get_employee_name(self, obj):
+    return f"{obj.employee.first_name} {obj.employee.last_name}"
+```
+
+## Cambios en el Frontend
+
+### Modelos (frontend/lib/models/affiliation_models.dart)
+- Renombrado `Provider` a `InsuranceProvider` para evitar conflictos con el paquete provider
+- Actualizadas las referencias en todo el código
+
+### Servicios (frontend/lib/services/user_service.dart)
+- Implementado método para obtener usuarios con rol EMPLOYEE:
+```dart
+Future<List<User>> getEmployeeUsers() async {
+  // Filtra usuarios con rol EMPLOYEE del endpoint /api/core/users/
+}
+```
+
+### Providers (frontend/lib/providers/affiliation_provider.dart)
+- Agregado `UserService` para manejar la obtención de empleados
+- Implementada lógica para manejar la selección de usuarios
+- Agregados métodos `createAffiliation` y `updateAffiliation`
+
+### Vistas (frontend/lib/views/affiliation/affiliation_form_screen.dart)
+- Actualizado el dropdown de empleados para usar usuarios del sistema core
+- Implementada conversión de ID de string a int para compatibilidad con el backend
+- Mejorado el manejo de errores y validaciones
+
+## Workflow Implementado
+
+1. **Obtención de Empleados**
+   - Se utiliza el endpoint `/api/core/users/` existente
+   - Se filtran usuarios con rol "EMPLOYEE"
+   - No requiere nueva tabla o endpoint
+
+2. **Creación de Afiliación**
+   - Se selecciona un usuario con rol EMPLOYEE del dropdown
+   - Se convierte el ID de string a int para el backend
+   - Se mantiene la integridad referencial con el sistema core
+
+## Razones del Cambio
+
+1. **Eliminación de Duplicación**
+   - Se elimina la necesidad de mantener datos de empleados en dos lugares
+   - Se usa la fuente única de verdad del sistema core
+
+2. **Mejora de Coherencia**
+   - Alineado con el diseño del sistema de roles
+   - Mejor integración con el módulo de usuarios
+
+3. **Simplificación del Código**
+   - Eliminada la necesidad de sincronización entre tablas
+   - Reducida la complejidad del modelo de datos
+
+## Correcciones de Bugs
+
+1. **Error de Clave Primaria**
+   - Solucionado el problema de tipo de datos del ID entre frontend y backend
+   - Implementada conversión apropiada de tipos
+
+2. **Conflicto de Nombres**
+   - Resuelto el conflicto de la clase Provider
+   - Renombrado a InsuranceProvider para mayor claridad
+
+## Archivos Modificados
+
+1. Backend:
+   - models.py
+   - serializers.py
+
+2. Frontend:
+   - user_service.dart
+   - affiliation_provider.dart
+   - affiliation_form_screen.dart
+   - affiliation_models.dart
+```
+
+Esta documentación proporciona una visión completa de los cambios realizados, su propósito y su implementación, facilitando el mantenimiento futuro y la comprensión del sistema.Esta documentación proporciona una visión completa de los cambios realizados, su propósito y su implementación, facilitando el mantenimiento futuro y la comprensión del sistema.

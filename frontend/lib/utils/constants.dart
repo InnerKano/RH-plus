@@ -33,6 +33,12 @@ class ApiConstants {
   static const String selectionPositionsUrl = '$baseUrl/api/selection/positions/';
   static const String selectionCandidateStagesUrl = '$baseUrl/api/selection/candidate-stages/';
   static const String selectionAnalyticsUrl = '$baseUrl/api/selection/analytics/';
+
+  // Affiliation Module URLs
+  static const String employeesUrl = '$baseUrl/api/affiliation/employees/';
+  static const String affiliationTypesUrl = '$baseUrl/api/affiliation/affiliation-types/';
+  static const String providersUrl = '$baseUrl/api/affiliation/providers/';
+  static const String affiliationsUrl = '$baseUrl/api/affiliation/affiliations/';
 }
 
 class AppColors {
@@ -142,6 +148,11 @@ class RouteNames {
   // Role Management
   static const String userManagement = '/user-management';
   static const String userRoleUpdate = '/user-role-update';
+
+  // Affiliation module
+  static const String affiliations = '/affiliations';
+  static const String employeeAffiliations = '/employee-affiliations';
+  static const String affiliationForm = '/affiliation-form';
 }
 
 // Role constants

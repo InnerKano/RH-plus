@@ -10,6 +10,7 @@ import '../views/training/forms/session_form_screen.dart';
 import '../views/training/training_session_detail_screen.dart';
 import '../views/training/management/attendance_management_screen.dart';
 import '../views/training/reports/training_reports_screen.dart';
+import '../views/affiliation/index.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -25,13 +26,19 @@ class AppRoutes {
   static const String trainingAttendance = '/training-attendance';
   static const String trainingReports = '/training-reports';
 
+  // Affiliation routes
+  static const String affiliations = '/affiliations';
+  static const String employeeAffiliations = '/employee-affiliations';
+  static const String affiliationForm = '/affiliation-form';
+
   static Map<String, WidgetBuilder> getRoutes() {
     return {
       login: (context) => const LoginScreen(),
       register: (context) => const RegisterScreen(),
       dashboard: (context) => const DashboardScreen(),
       userManagement: (context) => const UserManagementScreen(),
-      training: (context) => const TrainingMainScreen(),      trainingProgramForm: (context) {
+      training: (context) => const TrainingMainScreen(),
+      trainingProgramForm: (context) {
         final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
         return ProgramFormScreen(
           program: args?['program'] as TrainingProgramModel?,
@@ -44,7 +51,8 @@ class AppRoutes {
           session: args?['session'] as TrainingSessionModel?,
           isEditing: args?['isEditing'] as bool? ?? false,
         );
-      },      trainingSessionDetail: (context) {
+      },
+      trainingSessionDetail: (context) {
         final sessionId = ModalRoute.of(context)!.settings.arguments as int;
         return TrainingSessionDetailScreen(sessionId: sessionId);
       },
@@ -53,6 +61,23 @@ class AppRoutes {
         return AttendanceManagementScreen(session: session);
       },
       trainingReports: (context) => const TrainingReportsScreen(),
+      
+      // Affiliation routes
+      affiliations: (context) => const AffiliationMainScreen(),
+      employeeAffiliations: (context) {
+        final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+        return EmployeeAffiliationsScreen(
+          employeeId: args['employeeId'] as int,
+          employeeName: args['employeeName'] as String,
+        );
+      },
+      affiliationForm: (context) {
+        final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+        return AffiliationFormScreen(
+          affiliation: args?['affiliation'],
+          isEditing: args?['isEditing'] as bool? ?? false,
+        );
+      },
     };
   }
 }

@@ -10,6 +10,8 @@ RH Plus es un sistema de gestión de recursos humanos diseñado principalmente p
 2. **Personal de RRHH**: Usuarios principales que gestionan los procesos de selección, contratación, nómina, etc.
 3. **Supervisores/Gerentes**: Pueden ver información de sus equipos, realizar evaluaciones de desempeño.
 4. **Empleados**: Acceso limitado a sus propios datos, evaluaciones y capacitaciones.
+5. **Usuarios no empleados**: usuarios que pueden acceder al sistema para registrarse, pero no tienen acceso a funcionalidades avanzadas.
+6. **Candidatos**: Personas que aplican a procesos de selección, pueden ser gestionados por el personal de RRHH.
 
 ## Flujo General del Sistema
 
