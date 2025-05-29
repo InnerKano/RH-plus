@@ -115,29 +115,20 @@ class StageModel {
   final String name;
   final String? description;
   final int order;
-  final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
 
   StageModel({
     required this.id,
     required this.name,
     this.description,
     required this.order,
-    required this.isActive,
-    required this.createdAt,
-    required this.updatedAt,
   });
 
   factory StageModel.fromJson(Map<String, dynamic> json) {
     return StageModel(
       id: json['id'],
-      name: json['name'] ?? '',
-      description: json['description'],
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
       order: json['order'] ?? 0,
-      isActive: json['is_active'] ?? true,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
     );
   }
 
@@ -147,7 +138,6 @@ class StageModel {
       'name': name,
       'description': description,
       'order': order,
-      'is_active': isActive,
     };
   }
 
@@ -156,18 +146,12 @@ class StageModel {
     String? name,
     String? description,
     int? order,
-    bool? isActive,
-    DateTime? createdAt,
-    DateTime? updatedAt,
   }) {
     return StageModel(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
       order: order ?? this.order,
-      isActive: isActive ?? this.isActive,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

@@ -40,17 +40,11 @@ class SelectionService {
           .replace(queryParameters: queryParams);
 
       final response = await http.get(uri, headers: _headers);
-      print('response: ${response.body}');
-      print('response status code: ${response.statusCode}');
       if (response.statusCode == 200) {
-        if (response.body == '[]' || response.body.isEmpty) {
-          return [];
-        }
-        else{
-          final data = json.decode(response.body);
-          final results = data['results'] as List<dynamic>? ?? data as List<dynamic>;
-          return results.map((json) => CandidateModel.fromJson(json)).toList();
-        }
+        final data = json.decode(response.body);
+        print('Response data: $data'); // Debugging line
+        final results = data as List<dynamic>;
+        return results.map((json) => CandidateModel.fromJson(json)).toList();
       } else {
         throw Exception('Error al cargar candidatos: ${response.statusCode}');
       }
@@ -163,7 +157,7 @@ class SelectionService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final results = data['results'] as List<dynamic>? ?? data as List<dynamic>;
+        final results = data as List<dynamic>;
         return results.map((json) => StageModel.fromJson(json)).toList();
       } else {
         throw Exception('Error al cargar etapas: ${response.statusCode}');
@@ -278,34 +272,6 @@ class SelectionService {
       } else {
         final errorData = json.decode(response.body);
         throw Exception('Error al crear etapa del candidato: ${errorData['detail'] ?? 'Error desconocido'}');
-      }
-    } catch (e) {
-      throw Exception('Error de conexión: $e');
-    }
-  }
-
-  // Positions Operations
-  Future<List<PositionModel>> getPositions({
-    String? status,
-    String? department,
-  }) async {
-    try {
-      final queryParams = <String, String>{
-        if (status != null && status.isNotEmpty) 'status': status,
-        if (department != null && department.isNotEmpty) 'department': department,
-      };
-
-      final uri = Uri.parse('$_baseUrl/selection/positions/')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(uri, headers: _headers);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final results = data['results'] as List<dynamic>? ?? data as List<dynamic>;
-        return results.map((json) => PositionModel.fromJson(json)).toList();
-      } else {
-        throw Exception('Error al cargar posiciones: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error de conexión: $e');

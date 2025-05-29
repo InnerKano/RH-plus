@@ -38,7 +38,6 @@ class _CandidateListViewState extends State<CandidateListView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final selectionProvider = Provider.of<SelectionProvider>(context, listen: false);
       selectionProvider.loadCandidates(refresh: true);
-      selectionProvider.loadPositions();
     });
   }
 
@@ -185,7 +184,7 @@ class _CandidateListViewState extends State<CandidateListView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.error_outline,
                   size: 64,
                   color: AppColors.greyDark,
@@ -223,7 +222,7 @@ class _CandidateListViewState extends State<CandidateListView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.people_outline,
                   size: 64,
                   color: AppColors.greyDark,
@@ -354,7 +353,7 @@ class _CandidateListViewState extends State<CandidateListView> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.work_outline,
                     size: 16,
                     color: AppColors.greyDark,
@@ -369,7 +368,7 @@ class _CandidateListViewState extends State<CandidateListView> {
                       ),
                     ),
                   ),
-                  Icon(
+                  const Icon(
                     Icons.calendar_today,
                     size: 16,
                     color: AppColors.greyDark,
