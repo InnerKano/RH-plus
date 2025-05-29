@@ -80,7 +80,7 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _isLoading = true;
+  bool _isCheckingAuth = true;
 
   @override
   void initState() {
@@ -89,31 +89,27 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuthStatus() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-
-      if (token != null && token.isNotEmpty) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final isValid = await authProvider.loadUserFromToken(token);
-
-        if (!isValid) {
-          // Token is invalid, remove it
-          await prefs.remove('auth_token');
-        }
-      }
-    } catch (e) {
-      print('Error checking auth status: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+    print('AuthWrapper: Checking authentication status...');
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Intentar cargar token desde storage
+    final tokenLoaded = await authProvider.loadTokenFromStorage();
+    
+    if (tokenLoaded) {
+      print('AuthWrapper: User authenticated from storage');
+    } else {
+      print('AuthWrapper: No valid authentication found');
     }
+    
+    setState(() {
+      _isCheckingAuth = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isCheckingAuth) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),

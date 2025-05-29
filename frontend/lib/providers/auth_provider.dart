@@ -35,30 +35,27 @@ class AuthProvider with ChangeNotifier {
         }),
       );
 
-      print('AuthProvider: Login response status: ${response.statusCode}');
-      print('AuthProvider: Login response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _token = data['access'];
         _refreshToken = data['refresh'];
         
-        print('AuthProvider: Token received: ${_token?.substring(0, 20)}...');
-        
-        // Create user object from token data if available
-        if (data.containsKey('user')) {
-          _user = User.fromJson(data['user']);
-          print('AuthProvider: User loaded from login: ${_user?.email}');
+        // Save token to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth', _token!);
+        if (_refreshToken != null) {
+          await prefs.setString('refresh', _refreshToken!);
         }
         
-        // Load user permissions after successful login
+        // Load user permissions
         await loadUserPermissions();
         
-        notifyListeners();
+        print('AuthProvider: Login successful');
         return {'success': true, 'message': 'Login exitoso'};
       } else {
         final errorData = json.decode(response.body);
-        return {'success': false, 'message': errorData['detail'] ?? 'Error de autenticación'};
+        print('AuthProvider: Login failed: ${errorData['message']}');
+        return {'success': false, 'message': errorData['message'] ?? 'Credenciales inválidas'};
       }
     } catch (e) {
       print('AuthProvider: Login error: $e');
@@ -76,6 +73,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Save token to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth', token);
+      
       // Load user permissions with the token
       await loadUserPermissions();
       
@@ -86,10 +87,16 @@ class AuthProvider with ChangeNotifier {
       }
       
       print('AuthProvider: Failed to load user permissions');
+      // Clear invalid token from storage
+      await prefs.remove('auth');
+      _token = null;
       return false;
     } catch (e) {
       print('AuthProvider: Error loading user from token: $e');
       _token = null;
+      // Clear invalid token from storage
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth');
       return false;
     } finally {
       _isLoading = false;
@@ -146,22 +153,54 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
-    print('AuthProvider: Logging out user');
     _token = null;
     _refreshToken = null;
     _user = null;
     _userPermissions = null;
     
-    // Clear stored token
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('auth_token');
-      print('AuthProvider: Stored token cleared');
-    } catch (e) {
-      print('AuthProvider: Error clearing stored token: $e');
-    }
+    // Clear from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth');
+    await prefs.remove('refresh');
     
     notifyListeners();
+  }
+
+
+  Future<bool> loadTokenFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedToken = prefs.getString('auth');
+      final savedRefreshToken = prefs.getString('refresh');
+      
+      print('AuthProvider: Loading token from storage...');
+      print('AuthProvider: Token found: ${savedToken != null}');
+      
+      if (savedToken != null) {
+        _token = savedToken;
+        _refreshToken = savedRefreshToken;
+        
+        // Validar el token cargando permisos
+        await loadUserPermissions();
+        
+        // Si los permisos se cargaron correctamente, el token es válido
+        if (_userPermissions != null) {
+          print('AuthProvider: Token loaded and validated successfully');
+          return true;
+        } else {
+          // Token inválido, limpiar storage
+          print('AuthProvider: Token invalid, clearing storage');
+          await logout();
+          return false;
+        }
+      }
+      
+      print('AuthProvider: No token found in storage');
+      return false;
+    } catch (e) {
+      print('AuthProvider: Error loading token from storage: $e');
+      return false;
+    }
   }
 
   bool canAccessModule(String module) {
