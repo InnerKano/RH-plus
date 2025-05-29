@@ -31,7 +31,7 @@ class Employee(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name} ({self.employee_id})"
 
 class AffiliationType(models.Model):
     """Types of affiliations like ARL, EPS, Pension, etc."""
@@ -55,11 +55,11 @@ class Provider(models.Model):
         unique_together = ('name', 'affiliation_type')
     
     def __str__(self):
-        return f"{self.name} ({self.affiliation_type.name})"
+        return f"{self.name} - {self.affiliation_type.name}"
 
 class Affiliation(models.Model):
     """Employee affiliation to a provider."""
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='affiliations')
+    employee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='affiliations')
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
     affiliation_number = models.CharField(max_length=50, blank=True, null=True)
     start_date = models.DateField()

@@ -837,11 +837,21 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     if (currentModule.key == 'selection') {
       return _buildSelectionModule();
     }
-    
-    // Handle training module navigation
+      // Handle training module navigation
     if (currentModule.key == 'training') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushNamed(context, RouteNames.training);
+        setState(() {
+          _selectedIndex = 0;
+        });
+      });
+      return _buildDashboardContent();
+    }
+    
+    // Handle affiliation module navigation
+    if (currentModule.key == 'affiliation') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushNamed(context, RouteNames.affiliations);
         setState(() {
           _selectedIndex = 0;
         });

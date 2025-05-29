@@ -40,17 +40,39 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def by_document(self, request):
         """Return employee by document number."""
-        document = request.query_params.get('document')
-        
+        document = request.query_params.get('document', None)
         if not document:
-            return Response({"error": "Document number is required"}, status=400)
+            return Response({'error': 'Document number is required'}, status=400)
         
         employee = EmployeeRepository.get_by_document(document)
         if not employee:
-            return Response({"error": "Employee not found"}, status=404)
+            return Response({'error': 'Employee not found'}, status=404)
         
         serializer = self.get_serializer(employee)
         return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """Handle employee creation with proper validation."""
+        # Check if employee already exists with this document
+        document_number = request.data.get('document_number')
+        if document_number and Employee.objects.filter(document_number=document_number).exists():
+            return Response(
+                {'error': 'Ya existe un empleado con este número de documento'},
+                status=400
+            )
+            
+        # Check if user exists with this email
+        email = request.data.get('email')
+        if email:
+            from apps.core.models import User
+            user = User.objects.filter(email=email).first()
+            if user and hasattr(user, 'employee'):
+                return Response(
+                    {'error': 'Este usuario ya está registrado como empleado'},
+                    status=400
+                )
+        
+        return super().create(request, *args, **kwargs)
 
 class AffiliationTypeViewSet(viewsets.ModelViewSet):
     """ViewSet for the AffiliationType model."""
@@ -67,16 +89,14 @@ class ProviderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def by_type(self, request):
         """Return providers by affiliation type."""
-        affiliation_type = request.query_params.get('type')
-        
-        if not affiliation_type:
-            return Response({"error": "Affiliation type is required"}, status=400)
+        type_id = request.query_params.get('type_id', None)
+        if not type_id:
+            return Response({'error': 'Affiliation type ID is required'}, status=400)
         
         providers = Provider.objects.filter(
-            affiliation_type_id=affiliation_type,
+            affiliation_type_id=type_id,
             is_active=True
         )
-        
         serializer = self.get_serializer(providers, many=True)
         return Response(serializer.data)
 
@@ -91,12 +111,10 @@ class AffiliationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def by_employee(self, request):
         """Return affiliations by employee."""
-        employee_id = request.query_params.get('employee')
-        
+        employee_id = request.query_params.get('employee_id', None)
         if not employee_id:
-            return Response({"error": "Employee ID is required"}, status=400)
+            return Response({'error': 'Employee ID is required'}, status=400)
         
         affiliations = AffiliationRepository.get_by_employee(employee_id)
-        
         serializer = self.get_serializer(affiliations, many=True)
         return Response(serializer.data)
