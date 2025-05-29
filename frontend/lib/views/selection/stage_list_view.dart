@@ -53,7 +53,7 @@ class _StageListViewState extends State<StageListView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.error_outline,
                     size: 64,
                     color: AppColors.greyDark,
@@ -91,7 +91,7 @@ class _StageListViewState extends State<StageListView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.linear_scale_outlined,
                     size: 64,
                     color: AppColors.greyDark,
@@ -166,20 +166,19 @@ class _StageListViewState extends State<StageListView> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: stage.isActive ? AppColors.textColor.withOpacity(0.1) : AppColors.greyLight,
+                    color: AppColors.greyLight,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: stage.isActive ? AppColors.textColor : AppColors.greyDark,
+                      color:AppColors.textColor,
                       width: 2,
                     ),
                   ),
                   child: Center(
                     child: Text(
                       '${stage.order}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: stage.isActive ? AppColors.textColor : AppColors.greyDark,
                       ),
                     ),
                   ),
@@ -212,42 +211,24 @@ class _StageListViewState extends State<StageListView> {
                     ],
                   ),
                 ),
-                _buildStatusChip(stage.isActive),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, color: AppColors.greyDark),
                   color: AppColors.backgroundColor,
                   itemBuilder: (context) => [
-                    PopupMenuItem<String>(
+                    const PopupMenuItem<String>(
                       value: 'edit',
                       child: Row(
-                        children: const [
+                        children:[
                           Icon(Icons.edit, color: AppColors.textColor, size: 20),
                           SizedBox(width: 8),
                           Text('Editar', style: TextStyle(color: AppColors.textColor)),
                         ],
                       ),
                     ),
-                    PopupMenuItem<String>(
-                      value: stage.isActive ? 'deactivate' : 'activate',
-                      child: Row(
-                        children: [
-                          Icon(
-                            stage.isActive ? Icons.visibility_off : Icons.visibility,
-                            color: AppColors.textColor,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            stage.isActive ? 'Desactivar' : 'Activar',
-                            style: const TextStyle(color: AppColors.textColor),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
+                    const PopupMenuItem<String>(
                       value: 'delete',
                       child: Row(
-                        children: const [
+                        children:[
                           Icon(Icons.delete, color: Colors.red, size: 20),
                           SizedBox(width: 8),
                           Text('Eliminar', style: TextStyle(color: Colors.red)),
@@ -260,25 +241,17 @@ class _StageListViewState extends State<StageListView> {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
+            const Row(
               children: [
                 Icon(
                   Icons.drag_indicator,
                   size: 16,
                   color: AppColors.greyDark,
                 ),
-                const SizedBox(width: 4),
-                const Text(
+                SizedBox(width: 4),
+                Text(
                   'Arrastra para reordenar',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.greyDark,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  'Creado: ${DateFormat('dd/MM/yyyy').format(stage.createdAt)}',
-                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.greyDark,
                   ),
@@ -295,10 +268,10 @@ class _StageListViewState extends State<StageListView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green.withOpacity(0.1) : AppColors.greyLight,
+        color: isActive ? Colors.green.withValues(alpha: 0.1) : AppColors.greyLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isActive ? Colors.green.withOpacity(0.3) : AppColors.greyDark.withOpacity(0.3),
+          color: isActive ? Colors.green.withValues(alpha: 0.3) : AppColors.greyDark.withValues(alpha: .3),
         ),
       ),
       child: Text(
@@ -421,7 +394,7 @@ class _StageListViewState extends State<StageListView> {
       'order': int.tryParse(orderController.text.trim()) ?? 0,
       'description': descriptionController.text.trim().isNotEmpty 
           ? descriptionController.text.trim() 
-          : null,
+          : '',
     });
 
     Navigator.pop(context);
@@ -452,7 +425,6 @@ class _StageListViewState extends State<StageListView> {
         break;
       case 'activate':
       case 'deactivate':
-        _toggleStageStatus(stage, selectionProvider);
         break;
       case 'delete':
         _showDeleteConfirmation(stage, selectionProvider);
@@ -572,28 +544,6 @@ class _StageListViewState extends State<StageListView> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Etapa actualizada exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(selectionProvider.error ?? 'Error al actualizar etapa'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _toggleStageStatus(StageModel stage, SelectionProvider selectionProvider) async {
-    final success = await selectionProvider.updateStage(stage.id, {
-      'is_active': !stage.isActive,
-    });
-    
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Etapa ${stage.isActive ? 'desactivada' : 'activada'} exitosamente'),
           backgroundColor: Colors.green,
         ),
       );

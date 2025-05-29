@@ -38,7 +38,7 @@ class Candidate(models.Model):
     birth_date = models.DateField()
     address = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
-    current_stage = models.ForeignKey(SelectionStage, on_delete=models.SET_NULL, null=True, blank=True)
+    current_stage = models.ForeignKey(SelectionStage, on_delete=models.SET_NULL, null=True, blank=True, default=None)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

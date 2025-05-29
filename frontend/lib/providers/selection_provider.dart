@@ -292,27 +292,43 @@ class SelectionProvider with ChangeNotifier {
 
   // Stages operations
   Future<void> loadStages() async {
-    if (_selectionService == null) {
-      _error = 'Servicio no inicializado';
-      notifyListeners();
-      return;
-    }
-
-    _isLoadingStages = true;
-    _error = null;
+  if (_selectionService == null) {
+    _error = 'Servicio no inicializado';
     notifyListeners();
-
-    try {
-      _stages = await _selectionService!.getStages();
-      _stages.sort((a, b) => a.order.compareTo(b.order));
-    } catch (e) {
-      _error = e.toString();
-      print('Error loading stages: $e');
-    } finally {
-      _isLoadingStages = false;
-      notifyListeners();
-    }
+    return;
   }
+
+  _isLoadingStages = true;
+  _error = null;
+  notifyListeners();
+
+  try {
+    print('SelectionProvider: Loading stages...');
+    final stagesResult = await _selectionService!.getStages();
+    
+    // Validar que el resultado no sea null
+    if (stagesResult != null) {
+      _stages = stagesResult;
+      _stages.sort((a, b) => a.order.compareTo(b.order));
+      print('SelectionProvider: Loaded ${_stages.length} stages successfully');
+    } else {
+      _stages = [];
+      print('SelectionProvider: No stages received from service');
+    }
+  } catch (e) {
+    _error = e.toString();
+    print('Error loading stages: $e');
+    
+    // Agregar más detalles del error para debugging
+    if (kDebugMode) {
+      print('SelectionProvider - Full error details: $e');
+      print('StackTrace: ${StackTrace.current}');
+    }
+  } finally {
+    _isLoadingStages = false;
+    notifyListeners();
+  }
+}
 
   Future<bool> createStage(Map<String, dynamic> stageData) async {
     if (_selectionService == null) {
@@ -321,18 +337,79 @@ class SelectionProvider with ChangeNotifier {
       return false;
     }
 
+    // Validar datos de entrada antes de procesar
+    if (stageData.isEmpty) {
+      _error = 'Los datos de la etapa son requeridos';
+      notifyListeners();
+      return false;
+    }
+
+    // Validar campos requeridos y limpiar datos
+    final validatedData = <String, dynamic>{};
+    
+    // Nombre (requerido)
+    final name = stageData['name'];
+    if (name == null || name.toString().trim().isEmpty) {
+      _error = 'El nombre de la etapa es requerido';
+      notifyListeners();
+      return false;
+    }
+    validatedData['name'] = name.toString().trim();
+
+    // Descripción (opcional)
+    final description = stageData['description'];
+    if (description != null && description.toString().trim().isNotEmpty) {
+      validatedData['description'] = description.toString().trim();
+    }
+
+    // Orden (opcional, por defecto será el siguiente disponible)
+    final order = stageData['order'];
+    if (order != null) {
+      if (order is int) {
+        validatedData['order'] = order;
+      } else {
+        final parsedOrder = int.tryParse(order.toString());
+        if (parsedOrder != null) {
+          validatedData['order'] = parsedOrder;
+        }
+      }
+    } else {
+      // Calcular el siguiente orden disponible
+      validatedData['order'] = _stages.isEmpty ? 1 : _stages.length + 1;
+    }
+
+    // Estado activo (opcional, por defecto true)
+    final isActive = stageData['is_active'] ?? stageData['isActive'];
+    validatedData['is_active'] = isActive ?? true;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final newStage = await _selectionService!.createStage(stageData);
-      _stages.add(newStage);
-      _stages.sort((a, b) => a.order.compareTo(b.order));
-      return true;
+      print('SelectionProvider: Creating stage with validated data: $validatedData');
+      final newStage = await _selectionService!.createStage(validatedData);
+      
+      if (newStage != null) {
+        _stages.add(newStage);
+        _stages.sort((a, b) => a.order.compareTo(b.order));
+        print('SelectionProvider: Stage created successfully');
+        return true;
+      } else {
+        _error = 'Error al crear la etapa: respuesta vacía del servidor';
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       print('Error creating stage: $e');
+      
+      // Agregar más detalles del error para debugging
+      if (kDebugMode) {
+        print('SelectionProvider - Full error details: $e');
+        print('Original stage data: $stageData');
+        print('Validated stage data: $validatedData');
+        print('StackTrace: ${StackTrace.current}');
+      }
       return false;
     } finally {
       _isLoading = false;
@@ -394,28 +471,6 @@ class SelectionProvider with ChangeNotifier {
     }
   }
 
-  // Positions operations
-  Future<void> loadPositions() async {
-    if (_selectionService == null) {
-      _error = 'Servicio no inicializado';
-      notifyListeners();
-      return;
-    }
-
-    _isLoadingPositions = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      _positions = await _selectionService!.getPositions();
-    } catch (e) {
-      _error = e.toString();
-      print('Error loading positions: $e');
-    } finally {
-      _isLoadingPositions = false;
-      notifyListeners();
-    }
-  }
 
   Future<bool> createPosition(Map<String, dynamic> positionData) async {
     if (_selectionService == null) {
@@ -540,7 +595,6 @@ class SelectionProvider with ChangeNotifier {
     await Future.wait([
       loadCandidates(refresh: true),
       loadStages(),
-      loadPositions(),
     ]);
   }
 
