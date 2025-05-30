@@ -143,13 +143,24 @@ class UserViewSet(viewsets.ModelViewSet):
                 temp_user = User(role=role_code)
                 if user.can_manage_user(temp_user):
                     available_roles.append(role_code)
+              # Include user data in the response
+            user_data = {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'department': user.department,
+                'is_active': user.is_active
+            }
             
             permissions = {
                 'role': user.role,
                 'role_display': user.get_role_display(),
                 'accessible_modules': accessible_modules,
                 'can_manage_users': user.role in ['SUPERUSER', 'ADMIN', 'HR_MANAGER', 'SUPERVISOR'],
-                'manageable_roles': available_roles
+                'manageable_roles': available_roles,
+                'user': user_data  # Add user data to the response
             }
             
             print(f"Returning permissions: {permissions}")
