@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rh_plus/models/payroll_models.dart';
 import 'package:rh_plus/providers/payroll_provider.dart';
+import 'package:rh_plus/routes/app_routes.dart';
+import 'package:rh_plus/views/payroll/contracts_management_screen.dart';
+import 'package:rh_plus/views/payroll/payroll_periods_management_screen.dart';
+import 'package:rh_plus/views/payroll/payroll_items_management_screen.dart';
 import 'package:intl/intl.dart';
 
 class PayrollDashboardScreen extends StatefulWidget {
@@ -11,31 +15,68 @@ class PayrollDashboardScreen extends StatefulWidget {
   _PayrollDashboardScreenState createState() => _PayrollDashboardScreenState();
 }
 
-class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
+class _PayrollDashboardScreenState extends State<PayrollDashboardScreen>
+    with SingleTickerProviderStateMixin {
   final currencyFormat = NumberFormat.currency(locale: 'es_CO', symbol: '\$');
   bool _isInitialized = false;
+  late TabController _tabController;
 
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      _loadData();
       _isInitialized = true;
+      // Use post-frame callback to avoid calling notifyListeners during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadData();
+      });
     }
   }
-
   Future<void> _loadData() async {
     final payrollProvider = Provider.of<PayrollProvider>(context, listen: false);
+    
+    // Store the current selected period ID to preserve selection if possible
+    final currentSelectedPeriodId = payrollProvider.selectedPeriod?.id;
+    
     await payrollProvider.fetchOpenPayrollPeriods();
     
-    // If there's at least one open period, load its entries
+    // Try to restore the previous selection, or default to first period
     if (payrollProvider.periods.isNotEmpty) {
-      final firstPeriod = payrollProvider.periods.first;
-      payrollProvider.setSelectedPeriod(firstPeriod);
-      await payrollProvider.fetchPayrollEntriesByPeriod(firstPeriod.id);
+      PayrollPeriodModel? periodToSelect;
+      
+      if (currentSelectedPeriodId != null) {
+        // Try to find the previously selected period
+        try {
+          periodToSelect = payrollProvider.periods.firstWhere(
+            (period) => period.id == currentSelectedPeriodId,
+          );
+        } catch (e) {
+          // Period not found, will default to first
+          periodToSelect = payrollProvider.periods.first;
+        }
+      } else {
+        // No previous selection, use first
+        periodToSelect = payrollProvider.periods.first;
+      }
+      
+      payrollProvider.setSelectedPeriod(periodToSelect);
+      await payrollProvider.fetchPayrollEntriesByPeriod(periodToSelect.id);
+    } else {
+      // No periods available, clear selection
+      payrollProvider.clearSelectedPeriod();
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,59 +88,39 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             onPressed: _loadData,
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.dashboard),
+              text: 'Dashboard',
+            ),
+            Tab(
+              icon: Icon(Icons.description),
+              text: 'Contratos',
+            ),
+            Tab(
+              icon: Icon(Icons.calendar_today),
+              text: 'Períodos',
+            ),
+            Tab(
+              icon: Icon(Icons.list_alt),
+              text: 'Conceptos',
+            ),
+          ],
+        ),
       ),
-      body: Consumer<PayrollProvider>(
-        builder: (context, payrollProvider, child) {
-          if (payrollProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          if (payrollProvider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error: ${payrollProvider.error}',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            );
-          }
-          
-          if (payrollProvider.periods.isEmpty) {
-            return const Center(
-              child: Text('No hay períodos de nómina abiertos actualmente'),
-            );
-          }
-          
-          return Column(
-            children: [
-              _buildPeriodSelector(payrollProvider),
-              const Divider(),
-              Expanded(
-                child: _buildPayrollEntries(payrollProvider),
-              ),
-              _buildSummary(payrollProvider),
-            ],
-          );
-        },
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildDashboardTab(),
+          const ContractsManagementScreen(),
+          const PayrollPeriodsManagementScreen(),
+          const PayrollItemsManagementScreen(),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Navigate to new payroll entry screen
-        },
-        child: const Icon(Icons.add),
-        tooltip: 'Nuevo registro de nómina',
-      ),
+      floatingActionButton: _buildFloatingActionButton(),
     );
   }
 
@@ -122,11 +143,12 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey),
               borderRadius: BorderRadius.circular(4),
-            ),
-            child: DropdownButton<PayrollPeriodModel>(
+            ),            child: DropdownButton<PayrollPeriodModel>(
               isExpanded: true,
               underline: const SizedBox(),
-              value: payrollProvider.selectedPeriod,
+              value: payrollProvider.periods.contains(payrollProvider.selectedPeriod) 
+                  ? payrollProvider.selectedPeriod 
+                  : null,
               hint: const Text('Seleccione un período'),
               onChanged: (period) async {
                 if (period != null) {
@@ -150,7 +172,20 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
   Widget _buildPayrollEntries(PayrollProvider payrollProvider) {
     if (payrollProvider.payrollEntries.isEmpty) {
       return const Center(
-        child: Text('No hay registros de nómina para este período'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_outlined, size: 60, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('No hay registros de nómina para este período'),
+            SizedBox(height: 8),
+            Text(
+              'Usa el botón "+" para crear una nueva nómina',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
       );
     }
 
@@ -161,13 +196,24 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: ListTile(
-            title: Text(entry.employeeName),
+            leading: CircleAvatar(
+              backgroundColor: entry.isApproved ? Colors.green : Colors.orange,
+              child: Icon(
+                entry.isApproved ? Icons.check : Icons.pending,
+                color: Colors.white,
+              ),
+            ),
+            title: Text(
+              entry.employeeName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Text('Total: ${currencyFormat.format(entry.netPay)}'),
             trailing: Chip(
               label: Text(
                 entry.isApproved ? 'Aprobado' : 'Pendiente',
                 style: TextStyle(
                   color: entry.isApproved ? Colors.white : Colors.black87,
+                  fontSize: 12,
                 ),
               ),
               backgroundColor: entry.isApproved
@@ -176,7 +222,11 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             ),
             onTap: () {
               payrollProvider.setSelectedEntry(entry);
-              // Navigate to payroll detail screen
+              Navigator.pushNamed(
+                context, 
+                AppRoutes.payrollEntryDetail, 
+                arguments: entry.id,
+              );
             },
           ),
         );
@@ -250,6 +300,86 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDashboardTab() {
+    return Consumer<PayrollProvider>(
+      builder: (context, payrollProvider, child) {
+        if (payrollProvider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        if (payrollProvider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                const SizedBox(height: 16),
+                Text(
+                  'Error: ${payrollProvider.error}',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadData,
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        if (payrollProvider.periods.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.calendar_today_outlined, size: 60, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('No hay períodos de nómina abiertos actualmente'),
+                SizedBox(height: 8),
+                Text(
+                  'Crea un período en la pestaña "Períodos" para comenzar',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return Column(
+          children: [
+            _buildPeriodSelector(payrollProvider),
+            const Divider(),
+            Expanded(
+              child: _buildPayrollEntries(payrollProvider),
+            ),
+            _buildSummary(payrollProvider),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, child) {
+        // Only show FAB on dashboard tab
+        if (_tabController.index == 0) {
+          return FloatingActionButton(
+            onPressed: () {
+              Navigator.of(context).pushNamed(AppRoutes.payrollEntryForm);
+            },
+            child: const Icon(Icons.add),
+            tooltip: 'Nuevo registro de nómina',
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }

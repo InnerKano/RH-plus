@@ -6,6 +6,7 @@ import '../providers/dashboard_provider.dart';
 import '../providers/selection_provider.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
+import '../routes/app_routes.dart';
 import 'selection/candidate_list_view.dart';
 import 'selection/stage_list_view.dart';
 
@@ -841,11 +842,21 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
       });
       return _buildDashboardContent();
     }
-    
-    // Handle affiliation module navigation
+      // Handle affiliation module navigation
     if (currentModule.key == 'affiliation') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushNamed(context, RouteNames.affiliations);
+        setState(() {
+          _selectedIndex = 0;
+        });
+      });
+      return _buildDashboardContent();
+    }
+    
+    // Handle payroll module navigation
+    if (currentModule.key == 'payroll') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushNamed(context, AppRoutes.payroll);
         setState(() {
           _selectedIndex = 0;
         });

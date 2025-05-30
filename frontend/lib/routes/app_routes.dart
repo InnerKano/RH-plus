@@ -11,6 +11,12 @@ import '../views/training/training_session_detail_screen.dart';
 import '../views/training/management/attendance_management_screen.dart';
 import '../views/training/reports/training_reports_screen.dart';
 import '../views/affiliation/index.dart';
+import '../views/payroll/payroll_dashboard_screen.dart';
+import '../views/payroll/payroll_entry_detail_screen.dart';
+import '../views/payroll/payroll_entry_form_screen.dart';
+import '../views/payroll/contracts_management_screen.dart';
+import '../views/payroll/payroll_periods_management_screen.dart';
+import '../views/payroll/payroll_items_management_screen.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -25,11 +31,17 @@ class AppRoutes {
   static const String trainingSessionDetail = '/training-session-detail';
   static const String trainingAttendance = '/training-attendance';
   static const String trainingReports = '/training-reports';
-
   // Affiliation routes
   static const String affiliations = '/affiliations';
   static const String employeeAffiliations = '/employee-affiliations';
   static const String affiliationForm = '/affiliation-form';
+  // Payroll routes
+  static const String payroll = '/payroll';
+  static const String payrollEntryDetail = '/payroll-entry-detail';
+  static const String payrollEntryForm = '/payroll-entry-form';
+  static const String contracts = '/contracts';
+  static const String payrollPeriods = '/payroll-periods';
+  static const String payrollItems = '/payroll-items';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -70,14 +82,22 @@ class AppRoutes {
           employeeId: args['employeeId'] as int,
           employeeName: args['employeeName'] as String,
         );
-      },
-      affiliationForm: (context) {
+      },      affiliationForm: (context) {
         final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
         return AffiliationFormScreen(
           affiliation: args?['affiliation'],
           isEditing: args?['isEditing'] as bool? ?? false,
         );
+      },      // Payroll routes
+      payroll: (context) => const PayrollDashboardScreen(),
+      payrollEntryDetail: (context) {
+        final entryId = ModalRoute.of(context)!.settings.arguments as int;
+        return PayrollEntryDetailScreen(entryId: entryId);
       },
+      payrollEntryForm: (context) => const PayrollEntryFormScreen(),
+      contracts: (context) => const ContractsManagementScreen(),
+      payrollPeriods: (context) => const PayrollPeriodsManagementScreen(),
+      payrollItems: (context) => const PayrollItemsManagementScreen(),
     };
   }
 }

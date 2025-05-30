@@ -1,3 +1,14 @@
+// Helper function to safely convert dynamic values to double
+double? _toDoubleNullable(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value);
+  }
+  return null;
+}
+
 class StageModel {
   final int id;
   final String name;
@@ -81,7 +92,7 @@ class CandidateStageModel {
       stageName: json['stage_name'] ?? json['stage']?['name'] ?? 'Sin etapa',
       status: json['status'] ?? 'pending',
       notes: json['notes'],
-      score: json['score']?.toDouble(),
+      score: _toDoubleNullable(json['score']),
       scheduledDate: json['scheduled_date'] != null 
           ? DateTime.parse(json['scheduled_date']) 
           : null,

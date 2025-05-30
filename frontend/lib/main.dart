@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rh_plus/providers/selection_provider.dart';
 import 'package:rh_plus/providers/affiliation_provider.dart';
+import 'package:rh_plus/providers/payroll_provider.dart';
+import 'package:rh_plus/providers/employee_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'routes/app_routes.dart';
 import 'providers/auth_provider.dart';
@@ -49,11 +51,21 @@ class MyApp extends StatelessWidget {
             // La inicialización se hará manualmente cuando sea necesario
             return newProvider;
           },
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, AffiliationProvider>(
+        ),        ChangeNotifierProxyProvider<AuthProvider, AffiliationProvider>(
           create: (_) => AffiliationProvider(token: ''),
           update: (_, auth, affiliationProvider) {
             return AffiliationProvider(token: auth.token ?? '');
+          },
+        ),        ChangeNotifierProxyProvider<AuthProvider, PayrollProvider>(
+          create: (_) => PayrollProvider(token: ''),
+          update: (_, auth, payrollProvider) {
+            return PayrollProvider(token: auth.token ?? '');
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, EmployeeProvider>(
+          create: (_) => EmployeeProvider(token: ''),
+          update: (_, auth, employeeProvider) {
+            return EmployeeProvider(token: auth.token ?? '');
           },
         ),
       ],

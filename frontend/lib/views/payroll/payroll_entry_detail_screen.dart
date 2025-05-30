@@ -18,19 +18,60 @@ class PayrollEntryDetailScreen extends StatefulWidget {
 
 class _PayrollEntryDetailScreenState extends State<PayrollEntryDetailScreen> {
   final currencyFormat = NumberFormat.currency(locale: 'es_CO', symbol: '\$');
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPayrollEntry();
+  }
+
+  Future<void> _loadPayrollEntry() async {
+    final payrollProvider = Provider.of<PayrollProvider>(context, listen: false);
+    try {
+      await payrollProvider.fetchPayrollEntryById(widget.entryId);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar la nómina: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalle de Nómina'),
-      ),
-      body: Consumer<PayrollProvider>(
+      ),      body: Consumer<PayrollProvider>(
         builder: (context, payrollProvider, child) {
+          if (_isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final entry = payrollProvider.selectedEntry;
           
           if (entry == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error, size: 64, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text('No se pudo cargar la información de la nómina'),
+                ],
+              ),
+            );
           }
 
           return SingleChildScrollView(
@@ -342,7 +383,6 @@ class _PayrollEntryDetailScreenState extends State<PayrollEntryDetailScreen> {
       ),
     );
   }
-
   void _showApprovalConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -360,10 +400,7 @@ class _PayrollEntryDetailScreenState extends State<PayrollEntryDetailScreen> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              onPressed: () {
-                // Implement approval logic here
-                Navigator.of(context).pop();
-              },
+              onPressed: () => _approveEntry(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
@@ -376,5 +413,76 @@ class _PayrollEntryDetailScreenState extends State<PayrollEntryDetailScreen> {
         );
       },
     );
+  }
+
+  Future<void> _approveEntry(BuildContext context) async {
+    // Close confirmation dialog first
+    Navigator.of(context).pop();
+    
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text('Aprobando nómina...'),
+              ],
+            ),
+          );
+        },
+      );
+
+      // Call approval method
+      final payrollProvider = Provider.of<PayrollProvider>(context, listen: false);
+      final success = await payrollProvider.approvePayrollEntry(widget.entryId);
+      
+      // Close loading dialog
+      if (mounted) navigator.pop();
+      
+      if (success) {
+        // Refresh entry data
+        await payrollProvider.fetchPayrollEntryById(widget.entryId);
+        
+        // Show success message
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('Nómina aprobada exitosamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        
+        // Refresh the UI
+        setState(() {});
+      } else {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('Error al aprobar la nómina'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (error) {
+      // Close loading dialog if still open
+      if (mounted) navigator.pop();
+      
+      // Show error message
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error al aprobar la nómina: $error'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 }
