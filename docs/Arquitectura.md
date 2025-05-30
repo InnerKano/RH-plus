@@ -62,6 +62,221 @@ rh_plus/
     └── arquitectura.md    # Esta guía
 ```
 
+```
+backend/apps/
+├── affiliation/
+│   │   __init__.py
+│   │   admin.py
+│   │   apps.py
+│   │   models.py
+│   │   repositories.py
+│   │   serializers.py
+│   │   signals.py
+│   │   urls.py
+│   │   views.py
+│   │
+│   └── migrations/
+│           __init__.py
+│           0001_initial.py
+│           0002_alter_affiliation_employee.py
+│
+├── core/
+│   │   __init__.py
+│   │   admin.py
+│   │   apps.py
+│   │   models.py
+│   │   repositories.py
+│   │   serializers.py
+│   │   signals.py
+│   │   urls.py
+│   │   utils.py
+│   │   views.py
+│   │
+│   ├── management/
+│   │   └── commands/
+│   │
+│   ├── migrations/
+│   │       __init__.py
+│   │       0001_initial.py
+│   │       0002_alter_user_username_alter_userrole_unique_together.py
+│   │       0003_alter_user_username.py
+│   │       0004_systemactivity.py
+│   │       0005_user_department_user_manager_user_role.py
+│   │
+│   ├── models/
+│   │       activity.py
+│   │
+│   ├── serializers/
+│   │
+│   └── views/
+│
+├── payroll/
+│   │   __init__.py
+│   │   admin.py
+│   │   apps.py
+│   │   models.py
+│   │   repositories.py
+│   │   serializers.py
+│   │   signals.py
+│   │   urls.py
+│   │   views.py
+│   │
+│   └── migrations/
+│           __init__.py
+│           0001_initial.py
+│
+├── performance/
+│   │   __init__.py
+│   │   admin.py
+│   │   apps.py
+│   │   models.py
+│   │   repositories.py
+│   │   serializers.py
+│   │   signals.py
+│   │   urls.py
+│   │   views.py
+│   │
+│   └── migrations/
+│           __init__.py
+│           0001_initial.py
+│
+├── selection/
+│   │   __init__.py
+│   │   admin.py
+│   │   apps.py
+│   │   models.py
+│   │   repositories.py
+│   │   serializers.py
+│   │   signals.py
+│   │   urls.py
+│   │   views.py
+│   │
+│   └── migrations/
+│           __init__.py
+│           0001_initial.py
+│           0002_alter_candidate_current_stage.py
+│
+└── training/
+    │   __init__.py
+    │   admin.py
+    │   apps.py
+    │   logging.py
+    │   models.py
+    │   repositories.py
+    │   serializers.py
+    │   signals.py
+    │   urls.py
+    │   views.py
+    │
+    └── migrations/
+            __init__.py
+            0001_initial.py
+```
+
+
+```
+lib/
+│   main.dart
+│
+├── models/
+│   │   affiliation_models.dart
+│   │   candidate_model.dart
+│   │   employee_model.dart
+│   │   payroll_models.dart
+│   │   selection_models.dart
+│   │   training_models.dart
+│   │   user_model.dart
+│   │
+│   ├── affiliation/
+│   └── payroll/
+│
+├── providers/
+│       activity_provider.dart
+│       affiliation_provider.dart
+│       auth_provider.dart
+│       candidate_provider.dart
+│       dashboard_provider.dart
+│       employee_provider.dart
+│       payroll_provider.dart
+│       selection_provider.dart
+│       training_provider.dart
+│       user_management_provider.dart
+│
+├── routes/
+│       app_routes.dart
+│
+├── services/
+│       activity_service.dart
+│       affiliation_service.dart
+│       candidate_service.dart
+│       employee_service.dart
+│       payroll_service.dart
+│       selection_service.dart
+│       training_service.dart
+│       user_service.dart
+│
+├── utils/
+│       constants.dart
+│
+├── views/
+│   │   dashboard_screen.dart
+│   │   login_screen.dart
+│   │   register_screen.dart
+│   │   user_management_screen.dart
+│   │
+│   ├── affiliation/
+│   │       affiliation_form_screen.dart
+│   │       affiliation_main_screen.dart
+│   │       employee_affiliations_screen.dart
+│   │       index.dart
+│   │
+│   ├── debug/
+│   │       token_debug_screen.dart
+│   │
+│   ├── payroll/
+│   │   │   payroll_dashboard_screen.dart
+│   │   │   payroll_entry_detail_screen.dart
+│   │   │
+│   │   └── widgets/
+│   │
+│   ├── selection/
+│   │       candidate_detail_view.dart
+│   │       candidate_form.dart
+│   │       candidate_list_view.dart
+│   │       stage_list_view.dart
+│   │
+│   ├── training/
+│   │   │   training_dashboard_screen.dart
+│   │   │   training_main_screen.dart
+│   │   │   training_session_detail_screen.dart
+│   │   │
+│   │   ├── forms/
+│   │   │       program_form_screen.dart
+│   │   │       session_form_screen.dart
+│   │   │
+│   │   ├── management/
+│   │   │       attendance_management_screen.dart
+│   │   │
+│   │   ├── reports/
+│   │   │       training_reports_screen.dart
+│   │   │
+│   │   └── widgets/
+│   │           admin_training_view.dart
+│   │           employee_training_view.dart
+│   │           hr_training_view.dart
+│   │           program_card.dart
+│   │           session_card.dart
+│   │           supervisor_training_view.dart
+│   │           training_stats_card.dart
+│   │           user_training_view.dart
+│   │
+│   └── user_management/
+│
+└── widgets/
+        error_dialog.dart
+        loading_state_widget.dart
+```
+
 ---
 
 ### 4. Módulos del Backend y Funciones
