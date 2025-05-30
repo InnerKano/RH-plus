@@ -7,6 +7,7 @@ import '../../models/selection_models.dart';
 import '../../utils/constants.dart';
 import 'candidate_form.dart';
 import 'candidate_detail_view.dart';
+import '../../models/candidate_model.dart';
 
 class CandidateListView extends StatefulWidget {
   const CandidateListView({Key? key}) : super(key: key);
@@ -279,6 +280,8 @@ class _CandidateListViewState extends State<CandidateListView> {
   }
 
   Widget _buildCandidateCard(CandidateModel candidate) {
+    final current_stage_name = Provider.of<SelectionProvider>(context, listen: false)
+        .getStageNameById(candidate.currentStageId);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -300,18 +303,14 @@ class _CandidateListViewState extends State<CandidateListView> {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: AppColors.greyLight,
-                    backgroundImage: candidate.profileImage != null && candidate.profileImage!.isNotEmpty
-                        ? NetworkImage(candidate.profileImage!)
-                        : null,
-                    child: candidate.profileImage == null || candidate.profileImage!.isEmpty
-                        ? Text(
-                            candidate.firstName.isNotEmpty ? candidate.firstName[0].toUpperCase() : 'C',
-                            style: const TextStyle(
-                              color: AppColors.textColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
+                    child: Text
+                    (
+                      candidate.firstName.isNotEmpty ? candidate.firstName[0].toUpperCase() : 'C',
+                      style: const TextStyle(
+                        color: AppColors.textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -334,16 +333,14 @@ class _CandidateListViewState extends State<CandidateListView> {
                             color: AppColors.greyDark,
                           ),
                         ),
-                        if (candidate.phone != null && candidate.phone!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            candidate.phone!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.greyDark,
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          candidate.phone,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.greyDark,
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -359,14 +356,21 @@ class _CandidateListViewState extends State<CandidateListView> {
                     color: AppColors.greyDark,
                   ),
                   const SizedBox(width: 4),
+                  
                   Expanded(
-                    child: Text(
-                      candidate.positionTitle,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.greyDark,
-                      ),
-                    ),
+                    child: FutureBuilder<String?>(
+                      future: Provider.of<SelectionProvider>(context, listen: false)
+                          .getStageNameById(candidate.currentStageId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Text('Cargando etapa...');
+                        }
+                        if (snapshot.hasError) {
+                          return const Text('Error al obtener etapa');
+                        }
+                        return Text(snapshot.data ?? 'Sin etapa');
+                      },
+                    ),  
                   ),
                   const Icon(
                     Icons.calendar_today,
@@ -375,7 +379,7 @@ class _CandidateListViewState extends State<CandidateListView> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    DateFormat('dd/MM/yyyy').format(candidate.createdAt),
+                    DateFormat('dd/MM/yyyy').format(DateTime.parse(candidate.createdAt)),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.greyDark,
@@ -397,9 +401,9 @@ class _CandidateListViewState extends State<CandidateListView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         statusInfo,

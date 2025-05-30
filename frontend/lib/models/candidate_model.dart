@@ -11,7 +11,7 @@ class CandidateModel {
   final String address;
   final String status;
   final int? currentStageId;
-  final String? currentStageName;
+  String? currentStageName;
   final String createdAt;
 
   CandidateModel({

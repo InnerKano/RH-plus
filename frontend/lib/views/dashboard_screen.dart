@@ -115,35 +115,6 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
       appBar: _buildAppBar(),
       drawer: _buildDrawer(),
       body: _buildBody(),
-      floatingActionButton: _buildSelectionFloatingButton(),
-    );
-  }
-
-  // BOTÓN PARA ACCEDER AL MÓDULO DE SELECCIÓN
-  Widget? _buildSelectionFloatingButton() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        // Solo mostrar el botón si el usuario tiene acceso al módulo de selección
-        // y está en el dashboard (no en el módulo de selección)
-        if (authProvider.userPermissions?.canAccessModule('selection') == true && _selectedIndex == 0) {
-          return FloatingActionButton.extended(
-            onPressed: () {
-              // Encontrar el índice del módulo de selección
-              final selectionIndex = _accessibleModules.indexWhere((module) => module.key == 'selection');
-              if (selectionIndex != -1) {
-                setState(() {
-                  _selectedIndex = selectionIndex;
-                });
-              }
-            },
-            backgroundColor: AppColors.primaryColor,
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.person_search_outlined),
-            label: const Text('Selección'),
-          );
-        }
-        return const SizedBox.shrink();
-      },
     );
   }
 
@@ -166,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
           
           return Text(
             currentTitle,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.onPrimaryColor,
               fontWeight: FontWeight.w500,
             ),
@@ -203,17 +174,6 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
           },
         ),
         IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Notificaciones - En desarrollo'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-        ),
-        IconButton(
           icon: const Icon(Icons.logout_outlined, color: Colors.white),
           onPressed: () => _logout(),
         ),
@@ -240,7 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         final permissions = authProvider.userPermissions;
         
         return UserAccountsDrawerHeader(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -281,7 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                       height: 60,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Icon(
+                        return const Icon(
                           Icons.person,
                           size: 40,
                           color: AppColors.primaryColor,
@@ -289,7 +249,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                       },
                     ),
                   )
-                : Icon(
+                : const Icon(
                     Icons.person,
                     size: 40,
                     color: AppColors.primaryColor,
@@ -330,7 +290,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: isSelected ? AppColors.primaryColor.withOpacity(0.1) : null,
+                color: isSelected ? AppColors.primaryColor.withValues(alpha: .1) : null,
               ),
               child: ListTile(
                 leading: Icon(
@@ -357,10 +317,10 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   Widget _buildDrawerFooter() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.greyLight)),
       ),
-      child: Column(
+      child: const Column(
         children: [
           Text(
             'RH Plus v1.0.0',
@@ -371,7 +331,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
           ),
           const SizedBox(height: 4),
           Text(
-            '© 2024 Tu Empresa',
+            '© 2024 los venecos',
             style: TextStyle(
               color: AppColors.greyDark,
               fontSize: 10,
@@ -447,7 +407,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                         height: 60,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return Icon(
+                          return const Icon(
                             Icons.person,
                             size: 35,
                             color: AppColors.primaryColor,
@@ -455,7 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                         },
                       ),
                     )
-                  : Icon(
+                  : const Icon(
                       Icons.person,
                       size: 35,
                       color: AppColors.primaryColor,
@@ -523,7 +483,15 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     if (permissions.canAccessModule('selection')) {
       summaryCards.add(_buildSummaryCard(
         'Candidatos',
-        '${summaryData['candidates_count'] ?? 0}',
+    ''' 
+        Este módulo está diseñado para ser
+        el punto de entrada del talento a la organización,
+        optimizando cada etapa del proceso de selección
+        desde la captación hasta la contratación,
+        asegurando que se identifiquen y contraten a los mejores
+        candidatos de manera eficiente y con una excelente experiencia
+        para todos los involucrados.
+    ''',
         Icons.people_outline,
         AppColors.infoColor,
         () => _navigateToModule('selection'),
@@ -533,7 +501,12 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     if (permissions.canAccessModule('affiliation')) {
       summaryCards.add(_buildSummaryCard(
         'Empleados',
-        '${summaryData['employees_count'] ?? 0}',
+    ''' 
+        Este módulo constituye el núcleo de la gestión
+        del talento humano, proporcionando una base sólida
+        para todos los demás procesos de recursos humanos
+        en la organización.
+    ''',
         Icons.badge_outlined,
         AppColors.successColor,
         () => _navigateToModule('affiliation'),
@@ -543,7 +516,13 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     if (permissions.canAccessModule('payroll')) {
       summaryCards.add(_buildSummaryCard(
         'Nómina',
-        summaryData['current_payroll_period'] ?? 'No definido',
+    '''
+        Este módulo representa el corazón financiero
+        de la gestión del talento humano, asegurando que
+        todos los procesos de compensación se realicen de manera
+        precisa, oportuna y en cumplimiento de la normatividad
+        laboral vigente.
+    ''',
         Icons.payments_outlined,
         AppColors.warningColor,
         () => _navigateToModule('payroll'),
@@ -553,7 +532,12 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     if (permissions.canAccessModule('training')) {
       summaryCards.add(_buildSummaryCard(
         'Capacitaciones',
-        '${summaryData['upcoming_trainings'] ?? 0} próximas',
+      '''
+        Este módulo está diseñado para ser
+        el centro neurálgico del desarrollo 
+        del talento humano en la organización,
+        promoviendo una cultura de aprendizaje 
+        continuo y crecimiento profesional.''',
         Icons.school_outlined,
         AppColors.errorColor,
         () => _navigateToModule('training'),
@@ -564,7 +548,13 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     if (permissions.canManageUsers) {
       summaryCards.add(_buildSummaryCard(
         'Gestión de Usuarios',
-        '${summaryData['total_users'] ?? 0} usuarios',
+    ''' 
+        Este módulo es fundamental para mantener
+        la seguridad y el control operativo del sistema
+        RH Plus, asegurando que cada usuario tenga exactamente
+        los permisos necesarios para realizar sus funciones
+        de manera eficiente y segura.
+    ''',
         Icons.people_outlined,
         AppColors.secondaryColor,
         () => Navigator.pushNamed(context, RouteNames.userManagement),
@@ -579,7 +569,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Icon(
+              const Icon(
                 Icons.info_outline,
                 size: 48,
                 color: AppColors.greyDark,
@@ -613,7 +603,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: 1.1,
+      childAspectRatio: 2.5,
       children: summaryCards,
     );
   }
@@ -641,13 +631,13 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(icon, color: color, size: 20),
                   ),
                   const Spacer(),
-                  Icon(
+                  const Icon(
                     Icons.arrow_forward_ios,
                     size: 14,
                     color: AppColors.greyDark,
@@ -657,7 +647,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               const SizedBox(height: 12),
               Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.greyDark,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -666,7 +656,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               const SizedBox(height: 4),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textColor,
@@ -700,7 +690,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.history,
                     size: 48,
                     color: AppColors.greyDark,
@@ -781,7 +771,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -801,7 +791,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.greyDark,
                       fontSize: 12,
                     ),
@@ -811,7 +801,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             ),
             Text(
               _formatTimeAgo(time),
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.greyDark,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -911,7 +901,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.lock_outline,
                   size: 64,
                   color: AppColors.greyDark,

@@ -264,27 +264,6 @@ class _StageListViewState extends State<StageListView> {
     );
   }
 
-  Widget _buildStatusChip(bool isActive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.green.withValues(alpha: 0.1) : AppColors.greyLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isActive ? Colors.green.withValues(alpha: 0.3) : AppColors.greyDark.withValues(alpha: .3),
-        ),
-      ),
-      child: Text(
-        isActive ? 'Activa' : 'Inactiva',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: isActive ? Colors.green : AppColors.greyDark,
-        ),
-      ),
-    );
-  }
-
   void _showAddStageDialog() {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
@@ -607,18 +586,35 @@ class _StageListViewState extends State<StageListView> {
     }
   }
 
-  void _reorderStages(int oldIndex, int newIndex, SelectionProvider selectionProvider) {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
+  void _reorderStages(int oldIndex, int newIndex, SelectionProvider selectionProvider) async {
+    if (newIndex > oldIndex) newIndex -= 1;
+
+    // Reordena localmente
+    final stages = List<StageModel>.from(selectionProvider.stages);
+    final StageModel moved = stages.removeAt(oldIndex);
+    stages.insert(newIndex, moved);
+
+    // Actualiza el campo order según la nueva posición
+    for (int i = 0; i < stages.length; i++) {
+      stages[i] = stages[i].copyWith(order: i + 1);
     }
-    
-    // This would need to be implemented on the backend to update all stage orders
-    // For now, we'll just show a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Función de reordenamiento en desarrollo'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+
+    final success = await selectionProvider.reorderStages(stages);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Orden de etapas actualizado'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(selectionProvider.error ?? 'Error al reordenar etapas'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

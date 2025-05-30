@@ -1,4 +1,5 @@
-from rest_framework import viewsets, permissions
+
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import SelectionStage, Candidate, SelectionProcess, ProcessCandidate, CandidateDocument
@@ -13,13 +14,32 @@ class SelectionStageViewSet(viewsets.ModelViewSet):
     queryset = SelectionStage.objects.all()
     serializer_class = SelectionStageSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    @action(detail=False, methods=['patch'], url_path='reorder')
+    def reorder(self, request):
+        """
+        Espera un payload tipo:
+        [{"id": 1, "order": 1}, {"id": 2, "order": 2}, ...]
+        """
+        for item in request.data:
+            SelectionStage.objects.filter(id=item['id']).update(order=item['order'])
+        return Response({'detail': 'Orden actualizado'}, status=status.HTTP_200_OK)
 
 class CandidateViewSet(viewsets.ModelViewSet):
-    serializer_class = CandidateSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+    queryset = Candidate.objects.all()
+    serializer_class = CandidateSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['first_name', 'last_name', 'email', 'document_number'] 
+    ordering_fields = ['created_at', 'first_name']
+    ordering = ['-created_at']
+
     def get_queryset(self):
-        return CandidateRepository.get_active_candidates()
+        queryset = super().get_queryset()
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        return queryset
         
     def perform_create(self, serializer):
         """Register a system activity when a candidate is created."""
