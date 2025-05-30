@@ -329,7 +329,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               fontSize: 12,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             '© 2024 los venecos',
             style: TextStyle(
@@ -631,7 +631,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
+                      color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(icon, color: color, size: 20),
@@ -654,12 +654,16 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textColor,
+              Flexible( // <-- Cambia aquí
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textColor,
+                  ),
+                  maxLines: 5, // Puedes ajustar el máximo de líneas
+                  overflow: TextOverflow.ellipsis, // O usa TextOverflow.fade si prefieres
                 ),
               ),
             ],
