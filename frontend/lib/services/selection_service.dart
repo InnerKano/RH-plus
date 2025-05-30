@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/selection_models.dart';
 import '../utils/constants.dart';
+import '../models/candidate_model.dart';
 
 class SelectionService {
   final String _token;
@@ -42,11 +43,30 @@ class SelectionService {
       final response = await http.get(uri, headers: _headers);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Response data: $data'); // Debugging line
+        print('Response data: $data');
         final results = data as List<dynamic>;
         return results.map((json) => CandidateModel.fromJson(json)).toList();
       } else {
         throw Exception('Error al cargar candidatos: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+
+  Future<String> getStageById(int id) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/selection/stages/$id/'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['name'] ?? 'Etapa desconocida';
+      } else {
+        throw Exception('Error al cargar etapa: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error de conexión: $e');
@@ -205,6 +225,21 @@ class SelectionService {
     }
   }
 
+  Future<void> reorderStages(List<StageModel> stages) async {
+    final url = '$_baseUrl/api/selection/stages/reorder/';
+    final payload = stages.map((s) => {'id': s.id, 'order': s.order}).toList();
+
+    final response = await http.patch(
+      Uri.parse(url),
+      headers: _headers,
+      body: json.encode(payload),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al reordenar etapas: ${response.body}');
+    }
+  }
+
   Future<void> deleteStage(int id) async {
     try {
       final response = await http.delete(
@@ -243,7 +278,7 @@ class SelectionService {
   Future<CandidateStageModel> updateCandidateStage(int id, Map<String, dynamic> stageData) async {
     try {
       final response = await http.patch(
-        Uri.parse('$_baseUrl/api/selection/candidate-stages/$id/'),
+        Uri.parse('$_baseUrl/api/selection/candidates/$id/'),
         headers: _headers,
         body: json.encode(stageData),
       );

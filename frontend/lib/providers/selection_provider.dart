@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import '../models/selection_models.dart';
 import '../services/selection_service.dart';
+import '../models/candidate_model.dart';
 
 class SelectionProvider with ChangeNotifier {
   SelectionService? _selectionService;
@@ -520,7 +521,25 @@ class SelectionProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updateCandidateStage(int id, Map<String, dynamic> stageData) async {
+  Future<bool> reorderStages(List<StageModel> newOrder) async {
+    if (_selectionService == null) return false;
+    _isLoadingStages = true;
+    notifyListeners();
+    try {
+      await _selectionService!.reorderStages(newOrder);
+      _stages = List<StageModel>.from(newOrder);
+      _stages.sort((a, b) => a.order.compareTo(b.order));
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoadingStages = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateCandidateStage(int candidateId, int stageId) async {
     if (_selectionService == null) {
       _error = 'Servicio no inicializado';
       notifyListeners();
@@ -532,10 +551,15 @@ class SelectionProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final updatedStage = await _selectionService!.updateCandidateStage(id, stageData);
-      final index = _candidateStages.indexWhere((s) => s.id == id);
+      final updatedCandidate = await _selectionService!.updateCandidate(candidateId, {
+        'current_stage': stageId,
+      });
+      final index = _candidates.indexWhere((c) => c.id == candidateId);
       if (index != -1) {
-        _candidateStages[index] = updatedStage;
+        _candidates[index] = updatedCandidate;
+      }
+      if (_selectedCandidate?.id == candidateId) {
+        _selectedCandidate = updatedCandidate;
       }
       return true;
     } catch (e) {
@@ -548,6 +572,25 @@ class SelectionProvider with ChangeNotifier {
     }
   }
 
+  Future<String?>getStageNameById(int ?stageId) async {
+    if (_selectionService == null) {
+      _error = 'Servicio no inicializado';
+      notifyListeners();
+      return 'Etapa no encontrada';
+    }
+
+    try {
+      if (stageId == null) {
+        return 'sin etapa';
+      }
+      final stage = await _selectionService!.getStageById(stageId);
+      return stage;
+    } catch (e) {
+      _error = e.toString();
+      print('Error getting stage name: $e');
+      return 'Error al obtener el nombre de la etapa';
+    }
+  }
   // Analytics
   Future<void> loadAnalytics({DateTime? startDate, DateTime? endDate}) async {
     if (_selectionService == null) {
